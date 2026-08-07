@@ -264,7 +264,7 @@
 				DEVELOPMENT_TEAM = 9S282N7ZLS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				GOOGLE_URL_SCHEME = com.googleusercontent.apps.REPLACE_ME;
+				GOOGLE_URL_SCHEME = "com.googleusercontent.apps.579169224720-9locuddld8dupm50oc197o0cg165tq90";
 				INFOPLIST_FILE = BloggerApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
@@ -273,7 +273,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = studio.evol.blogger-app;
+				PRODUCT_BUNDLE_IDENTIFIER = "studio.evol.blogger-app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -292,7 +292,7 @@
 				DEVELOPMENT_TEAM = 9S282N7ZLS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				GOOGLE_URL_SCHEME = com.googleusercontent.apps.REPLACE_ME;
+				GOOGLE_URL_SCHEME = "com.googleusercontent.apps.579169224720-9locuddld8dupm50oc197o0cg165tq90";
 				INFOPLIST_FILE = BloggerApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
@@ -301,7 +301,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = studio.evol.blogger-app;
+				PRODUCT_BUNDLE_IDENTIFIER = "studio.evol.blogger-app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

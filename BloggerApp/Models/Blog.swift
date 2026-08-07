@@ -22,7 +22,7 @@ struct Blog: Codable, Identifiable {
     let locale: LocaleInfo?
 
     struct CountInfo: Codable {
-        let totalItems: Int?
+        let totalItems: FlexibleInt?
         let selfLink: String?
     }
 

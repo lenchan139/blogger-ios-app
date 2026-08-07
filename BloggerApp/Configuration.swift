@@ -18,12 +18,15 @@ enum Configuration {
     static let googleClientID = "579169224720-9locuddld8dupm50oc197o0cg165tq90.apps.googleusercontent.com"
 
     /// Reverse-DNS scheme used by GoogleSignIn to return to this app.
-    /// Derived automatically from `googleClientID`:
-    /// "com.googleusercontent.apps." + the client ID with every "." replaced by "-".
-    /// e.g. client ID "...123-apps.googleusercontent.com" ->
-    ///      scheme  "com.googleusercontent.apps....123-apps-googleusercontent-com"
+    /// Derived automatically from `googleClientID`: "com.googleusercontent.apps."
+    /// + the client ID with the ".apps.googleusercontent.com" suffix stripped and
+    /// any remaining "." replaced by "-".
+    /// e.g. client ID "1234-x.apps.googleusercontent.com" ->
+    ///      scheme  "com.googleusercontent.apps.1234-x"
     static var googleURLScheme: String {
-        "com.googleusercontent.apps." + googleClientID.replacingOccurrences(of: ".", with: "-")
+        let stripped = googleClientID
+            .replacingOccurrences(of: ".apps.googleusercontent.com", with: "")
+        return "com.googleusercontent.apps." + stripped.replacingOccurrences(of: ".", with: "-")
     }
 
     /// OAuth scopes requested from the user.

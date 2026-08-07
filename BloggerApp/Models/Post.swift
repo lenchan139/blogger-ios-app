@@ -33,7 +33,7 @@ struct Post: Codable, Identifiable {
     }
 
     struct CountInfo: Codable {
-        let totalItems: Int?
+        let totalItems: FlexibleInt?
         let selfLink: String?
     }
 

@@ -30,9 +30,23 @@ final class AuthManager: AccessTokenProvider, ObservableObject {
         guard let rootVC = Self.topViewController() else {
             throw BloggerError.http(statusCode: -1, message: "No view controller to present sign-in.")
         }
-        let user = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootVC)
-        currentUser = user.user
-        let refreshToken = user.user.refreshToken.tokenString
+        let user: GIDGoogleUser = try await withCheckedThrowingContinuation { continuation in
+            GIDSignIn.sharedInstance.signIn(
+                withPresenting: rootVC,
+                hint: nil,
+                additionalScopes: Configuration.scopes
+            ) { result, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if let user = result?.user {
+                    continuation.resume(returning: user)
+                } else {
+                    continuation.resume(throwing: BloggerError.http(statusCode: -1, message: "Sign-in returned no user."))
+                }
+            }
+        }
+        currentUser = user
+        let refreshToken = user.refreshToken.tokenString
         if !refreshToken.isEmpty {
             KeychainTokenStore.save(refreshToken)
         }

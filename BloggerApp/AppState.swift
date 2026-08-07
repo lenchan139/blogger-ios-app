@@ -29,4 +29,13 @@ final class AppState: ObservableObject {
         isSignedIn = false
         userEmail = nil
     }
+
+    /// Signs out the current Google account and immediately presents the
+    /// sign-in flow again so the user can pick a different account.
+    func switchAccount() async {
+        AuthManager.shared.signOut()
+        isSignedIn = false
+        userEmail = nil
+        await signIn()
+    }
 }

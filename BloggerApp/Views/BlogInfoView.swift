@@ -36,8 +36,8 @@ struct BlogInfoView: View {
             }
 
             Section("Content") {
-                LabeledContent("Posts", value: "\(blog.posts?.totalItems ?? 0)")
-                LabeledContent("Pages", value: "\(blog.pages?.totalItems ?? 0)")
+                LabeledContent("Posts", value: "\(blog.posts?.totalItems?.value ?? 0)")
+                LabeledContent("Pages", value: "\(blog.pages?.totalItems?.value ?? 0)")
             }
 
             Section {

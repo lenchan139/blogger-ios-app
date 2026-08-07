@@ -1,20 +1,28 @@
 import SwiftUI
 
+/// Home screen: lists the selected blog's posts, with a blog selector (top-left)
+/// and a Google account switcher (top-right).
 struct PostListView: View {
-    let blog: Blog
     @EnvironmentObject private var appState: AppState
 
     enum Filter: String, CaseIterable {
         case published, drafts
-        var status: String { rawValue } // Blogger uses "live" & "draft"
+        // Blogger's status query param uses "live" for published posts.
+        var status: String { self == .published ? "live" : "draft" }
     }
 
     @State private var filter: Filter = .published
+    @State private var blogs: [Blog] = []
+    @State private var selectedBlogId: String?
     @State private var posts: [Post] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showingLocalDrafts = false
     @State private var commentsPost: Post?
+
+    private var selectedBlog: Blog? {
+        blogs.first { $0.id == selectedBlogId } ?? blogs.first
+    }
 
     var body: some View {
         NavigationStack {
@@ -27,72 +35,178 @@ struct PostListView: View {
                     } description: {
                         Text(errorMessage)
                     } actions: {
-                        Button("Retry") { Task { await load() } }
+                        Button("Retry") { Task { await loadBlogs() } }
                     }
-                } else if posts.isEmpty {
-                    ContentUnavailableView(
-                        "No \(filter == .published ? "published" : "draft") posts",
-                        systemImage: "doc.text"
-                    )
+                } else if let blog = selectedBlog {
+                    postList(for: blog)
                 } else {
-                    List(posts) { post in
-                        NavigationLink {
-                            PostEditorView(blog: blog, post: post)
-                        } label: {
-                            PostRow(post: post)
-                        }
-                        .contextMenu {
-                            Button {
-                                commentsPost = post
-                            } label: {
-                                Label("Comments", systemImage: "text.bubble")
-                            }
-                        }
-                    }
-                    .listStyle(.plain)
-                    .refreshable { await load() }
+                    ContentUnavailableView("No blogs", systemImage: "doc.text")
                 }
             }
-            .navigationTitle(blog.name ?? "Posts")
+            .navigationTitle(selectedBlog?.name ?? "Posts")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Picker("Filter", selection: $filter) {
-                        ForEach(Filter.allCases, id: \.self) { f in
-                            Text(f == .published ? "Published" : "Drafts")
+                    if blogs.count > 1 {
+                        Menu {
+                            ForEach(blogs) { blog in
+                                Button {
+                                    selectedBlogId = blog.id
+                                } label: {
+                                    if blog.id == selectedBlog?.id {
+                                        Label(blog.name ?? "Untitled", systemImage: "checkmark")
+                                    } else {
+                                        Text(blog.name ?? "Untitled")
+                                    }
+                                }
+                            }
+                        } label: {
+                            Label(selectedBlog?.name ?? "Select blog", systemImage: "chevron.down")
+                                .labelStyle(.titleAndIcon)
                         }
                     }
-                    .pickerStyle(.segmented)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
                     Menu {
+                        if let blog = selectedBlog {
+                            NavigationLink {
+                                BlogInfoView(blog: blog)
+                            } label: {
+                                Label("Blog info", systemImage: "info.circle")
+                            }
+                            NavigationLink {
+                                PagesListView(blog: blog)
+                            } label: {
+                                Label("Pages", systemImage: "doc.plaintext")
+                            }
+                            NavigationLink {
+                                AllCommentsView(blog: blog)
+                            } label: {
+                                Label("All comments", systemImage: "text.bubble")
+                            }
+                            NavigationLink {
+                                StatsView(blog: blog)
+                            } label: {
+                                Label("Stats", systemImage: "chart.bar")
+                            }
+                        }
                         Button {
                             showingLocalDrafts = true
                         } label: {
                             Label("Local drafts", systemImage: "externaldrive")
                         }
                         NavigationLink {
-                            PostEditorView(blog: blog, post: nil)
+                            if let blog = selectedBlog {
+                                PostEditorView(blog: blog, post: nil)
+                            } else {
+                                Text("Select a blog first")
+                            }
                         } label: {
                             Label("New post", systemImage: "square.and.pencil")
                         }
                     } label: {
                         Image(systemName: "square.and.pencil")
                     }
+                    Menu {
+                        if let email = appState.userEmail {
+                            Text(email)
+                                .font(.caption)
+                        }
+                        Button {
+                            Task { await appState.switchAccount() }
+                        } label: {
+                            Label("Switch account", systemImage: "person.crop.circle.badge.plus")
+                        }
+                        Button(role: .destructive) {
+                            appState.signOut()
+                        } label: {
+                            Label("Sign out", systemImage: "arrow.right.square")
+                        }
+                    } label: {
+                        Image(systemName: "person.crop.circle")
+                    }
                 }
+            }
+            .task { await loadBlogs() }
+            .task(id: selectedBlogId) {
+                guard selectedBlog != nil else { return }
+                await loadPosts()
+            }
+            .task(id: filter) {
+                guard selectedBlog != nil else { return }
+                await loadPosts()
+            }
+            .onChange(of: selectedBlog?.id) { _, _ in
+                posts = []
             }
             .sheet(isPresented: $showingLocalDrafts) {
-                LocalDraftsView(blog: blog)
-            }
-            .sheet(item: $commentsPost) { post in
-                NavigationStack {
-                    CommentsView(blog: blog, post: post)
+                if let blog = selectedBlog {
+                    LocalDraftsView(blog: blog)
                 }
             }
-            .task(id: filter) { await load() }
+            .sheet(item: $commentsPost) { post in
+                if let blog = selectedBlog {
+                    NavigationStack {
+                        CommentsView(blog: blog, post: post)
+                    }
+                }
+            }
         }
     }
 
-    private func load() async {
+    @ViewBuilder
+    private func postList(for blog: Blog) -> some View {
+        VStack(spacing: 0) {
+            Picker("Filter", selection: $filter) {
+                ForEach(Filter.allCases, id: \.self) { f in
+                    Text(f == .published ? "Published" : "Drafts")
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+
+            if posts.isEmpty {
+                ContentUnavailableView(
+                    "No \(filter == .published ? "published" : "draft") posts",
+                    systemImage: "doc.text"
+                )
+            } else {
+                List(posts) { post in
+                    NavigationLink {
+                        PostEditorView(blog: blog, post: post)
+                    } label: {
+                        PostRow(post: post)
+                    }
+                    .contextMenu {
+                        Button {
+                            commentsPost = post
+                        } label: {
+                            Label("Comments", systemImage: "text.bubble")
+                        }
+                    }
+                }
+                .listStyle(.plain)
+                .refreshable { await loadPosts() }
+            }
+        }
+    }
+
+    private func loadBlogs() async {
+        errorMessage = nil
+        do {
+            let list = try await appState.api.listUserBlogs()
+            blogs = list.items ?? []
+            if selectedBlogId == nil {
+                selectedBlogId = blogs.first?.id
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func loadPosts() async {
+        guard let blog = selectedBlog else { return }
         isLoading = true
         errorMessage = nil
         do {
