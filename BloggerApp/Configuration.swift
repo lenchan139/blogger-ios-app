@@ -6,11 +6,25 @@ enum Configuration {
     /// The OAuth 2.0 Client ID for this iOS app from the Google Cloud Console.
     /// IMPORTANT: Replace this with your own client ID. Keep it in a config file
     /// that is NOT committed to source control in production.
-    static let googleClientID = "REPLACE_WITH_YOUR_CLIENT_ID"
+    ///
+    /// How to get it:
+    ///   1. Go to https://console.cloud.google.com/apis/credentials
+    ///   2. Enable the "Blogger API" and "Photos Library API" for your project.
+    ///   3. Click "Create credentials" > "OAuth client ID" > "iOS".
+    ///   4. Set the bundle ID to match this app (e.g. com.lenchan139.bloggerios).
+    ///   5. Copy the generated "Client ID" value here, and use its associated
+    ///      URL scheme (com.googleusercontent.apps.<client-id-with-dashes>)
+    ///      for `googleURLScheme` below.
+    static let googleClientID = "579169224720-9locuddld8dupm50oc197o0cg165tq90.apps.googleusercontent.com"
 
-    /// Reverse-DNS scheme used by GoogleSignIn to return to this app, e.g.
-    /// "com.googleusercontent.apps.<client-id-with-dashes>" is the default.
-    static let googleURLScheme = "com.googleusercontent.apps.REPLACE_ME"
+    /// Reverse-DNS scheme used by GoogleSignIn to return to this app.
+    /// Derived automatically from `googleClientID`:
+    /// "com.googleusercontent.apps." + the client ID with every "." replaced by "-".
+    /// e.g. client ID "...123-apps.googleusercontent.com" ->
+    ///      scheme  "com.googleusercontent.apps....123-apps-googleusercontent-com"
+    static var googleURLScheme: String {
+        "com.googleusercontent.apps." + googleClientID.replacingOccurrences(of: ".", with: "-")
+    }
 
     /// OAuth scopes requested from the user.
     static let scopes: [String] = [

@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "AA0000000000000000000006"
-               BuildableName = "BloggerApp.app"
+               BuildableName = "BloggerApp"
                BlueprintName = "BloggerApp"
                ReferencedContainer = "container:BloggerApp.xcodeproj">
             </BuildableReference>
@@ -29,8 +29,6 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
       shouldAutocreateTestPlan = "YES">
-      <Testables>
-      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -47,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AA0000000000000000000006"
-            BuildableName = "BloggerApp.app"
+            BuildableName = "BloggerApp"
             BlueprintName = "BloggerApp"
             ReferencedContainer = "container:BloggerApp.xcodeproj">
          </BuildableReference>
@@ -64,7 +62,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AA0000000000000000000006"
-            BuildableName = "BloggerApp.app"
+            BuildableName = "BloggerApp"
             BlueprintName = "BloggerApp"
             ReferencedContainer = "container:BloggerApp.xcodeproj">
          </BuildableReference>
