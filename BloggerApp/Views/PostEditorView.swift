@@ -20,6 +20,8 @@ struct PostEditorView: View {
     @State private var showingCamera = false
     @State private var imageToEdit: ImageEditPayload?
     @State private var showingSource = false
+    @State private var showingPreview = false
+    @State private var showingLabelsSheet = false
     @State private var errorMessage: String?
     @State private var restoredFromDraft = false
     @State private var autoSaveTask: Task<Void, Never>?
@@ -69,7 +71,9 @@ struct PostEditorView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                LabelEditor(labels: $labels)
+                LabelSummaryButton(labels: $labels) {
+                    showingLabelsSheet = true
+                }
 
                 if hasLocalChanges {
                     Label("Unsaved local changes", systemImage: "externaldrive.badge.checkmark")
@@ -130,6 +134,11 @@ struct PostEditorView: View {
                 } label: {
                     Image(systemName: "camera")
                 }
+                Button {
+                    showingPreview = true
+                } label: {
+                    Image(systemName: "eye")
+                }
             }
         }
         .sheet(isPresented: $showingImagePicker) {
@@ -141,6 +150,16 @@ struct PostEditorView: View {
             CameraPicker(onPicked: { data in
                 imageToEdit = ImageEditPayload(imageData: data)
             })
+        }
+        .sheet(isPresented: $showingPreview) {
+            ThemedPreviewView(blog: blog, html: htmlBody)
+        }
+        .sheet(isPresented: $showingLabelsSheet) {
+            NavigationStack {
+                LabelsEditSheet(title: title.isEmpty ? "Untitled" : title, labels: $labels) {
+                    showingLabelsSheet = false
+                }
+            }
         }
         .sheet(item: $imageToEdit) { payload in
             ImageEditSheet(payload: payload) { result in
@@ -424,77 +443,43 @@ extension String {
 
 // MARK: - Label editor
 
-private struct LabelEditor: View {
+/// Compact "Labels" row that opens a full labels editor in a sheet, keeping the
+/// post body editor large.
+private struct LabelSummaryButton: View {
     @Binding var labels: [String]
-    @State private var newLabel = ""
+    var onEdit: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Labels")
-                .font(.headline)
-            HStack {
-                TextField("Add a label", text: $newLabel)
-                    .textFieldStyle(.roundedBorder)
-                Button("Add") {
-                    let trimmed = newLabel.trimmingCharacters(in: .whitespaces)
-                    if !trimmed.isEmpty {
-                        labels.append(trimmed)
-                        newLabel = ""
-                    }
-                }
-                .disabled(newLabel.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-            FlowLayout(spacing: 8) {
-                ForEach(labels, id: \.self) { label in
-                    HStack(spacing: 4) {
-                        Text(label)
-                        Button {
-                            labels.removeAll { $0 == label }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
+        HStack(spacing: 10) {
+            Label("Labels", systemImage: "tag")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if labels.isEmpty {
+                Text("None")
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(labels, id: \.self) { label in
+                            Text(label)
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(.tint.opacity(0.15), in: Capsule())
+                                .lineLimit(1)
                         }
                     }
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.tint.opacity(0.15), in: Capsule())
                 }
             }
-        }
-    }
-}
-
-private struct FlowLayout: Layout {
-    var spacing: CGFloat
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        arrange(proposal: proposal, subviews: subviews).size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = arrange(proposal: proposal, subviews: subviews)
-        for (index, subview) in subviews.enumerated() {
-            let point = result.points[index]
-            subview.place(at: CGPoint(x: bounds.minX + point.x, y: bounds.minY + point.y), proposal: .unspecified)
-        }
-    }
-
-    private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, points: [CGPoint]) {
-        let maxWidth = proposal.width ?? .infinity
-        var points: [CGPoint] = []
-        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x + size.width > maxWidth, x > 0 {
-                x = 0
-                y += rowHeight + spacing
-                rowHeight = 0
+            Spacer()
+            Button {
+                onEdit()
+            } label: {
+                Text(labels.isEmpty ? "Add" : "Edit")
+                    .font(.subheadline)
             }
-            points.append(CGPoint(x: x, y: y))
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
         }
-        return (CGSize(width: maxWidth, height: y + rowHeight), points)
     }
 }
 

@@ -46,8 +46,10 @@ struct PostListView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if isLoading {
-                    ProgressView("Loading posts…")
+                if let blog = selectedBlog {
+                    postList(for: blog)
+                } else if isLoading {
+                    ProgressView("Loading…")
                 } else if let errorMessage {
                     ContentUnavailableView {
                         Label("Couldn't load posts", systemImage: "exclamationmark.triangle")
@@ -56,8 +58,6 @@ struct PostListView: View {
                     } actions: {
                         Button("Retry") { Task { await loadBlogs() } }
                     }
-                } else if let blog = selectedBlog {
-                    postList(for: blog)
                 } else {
                     ContentUnavailableView("No blogs", systemImage: "doc.text")
                 }
@@ -286,10 +286,15 @@ struct PostListView: View {
     private func apiPostsPage(for blog: Blog, filter: Filter) -> some View {
         let posts = postsByFilter[filter] ?? []
         if posts.isEmpty {
-            ContentUnavailableView(
-                "No \(filter == .published ? "published" : "draft") posts",
-                systemImage: "doc.text"
-            )
+            if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ContentUnavailableView(
+                    "No \(filter == .published ? "published" : "draft") posts",
+                    systemImage: "doc.text"
+                )
+            }
         } else {
             List(posts) { post in
                 NavigationLink {
@@ -339,6 +344,15 @@ struct PostListView: View {
             }
             .listStyle(.plain)
             .refreshable { await loadPosts(for: filter) }
+            .overlay(alignment: .top) {
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .padding(.top, 4)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.15), value: isLoading)
         }
     }
 

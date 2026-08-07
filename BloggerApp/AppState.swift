@@ -13,6 +13,15 @@ final class AppState: ObservableObject {
 
     init() {
         isSignedIn = AuthManager.shared.isSignedIn
+        // Reload the previously signed-in Google account from the keychain so
+        // the user doesn't have to sign in again after each app launch.
+        Task {
+            await AuthManager.shared.restorePreviousSignIn()
+            if AuthManager.shared.isSignedIn {
+                isSignedIn = true
+                updateUserProfile()
+            }
+        }
     }
 
     func signIn() async {

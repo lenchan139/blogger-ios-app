@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		BF9023FF3025ED5A0041AF7D /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = AA000000000000000000000A /* GoogleSignIn */; };
+		BF9026EA302626090041AF7D /* Aztec in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000022 /* Aztec */; };
+		BF9026EB302626090041AF7D /* InfomaniakRichHTMLEditor in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000032 /* InfomaniakRichHTMLEditor */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -29,6 +31,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BF9026EB302626090041AF7D /* InfomaniakRichHTMLEditor in Frameworks */,
+				BF9026EA302626090041AF7D /* Aztec in Frameworks */,
 				BF9023FF3025ED5A0041AF7D /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

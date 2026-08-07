@@ -18,6 +18,19 @@ final class AuthManager: AccessTokenProvider, ObservableObject {
         GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: Configuration.googleClientID)
     }
 
+    /// Restores a previously signed-in user from the keychain. On a fresh
+    /// launch `currentUser` is nil even if the user was signed in before, so we
+    /// must call this to reload the persisted session.
+    func restorePreviousSignIn() async {
+        guard GIDSignIn.sharedInstance.hasPreviousSignIn() else { return }
+        do {
+            let user = try await GIDSignIn.sharedInstance.restorePreviousSignIn()
+            currentUser = user
+        } catch {
+            currentUser = nil
+        }
+    }
+
     var isSignedIn: Bool { currentUser != nil }
 
     /// Call from `onOpenURL`.
