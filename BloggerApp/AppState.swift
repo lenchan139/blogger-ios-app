@@ -5,6 +5,7 @@ import Combine
 final class AppState: ObservableObject {
     @Published var isSignedIn = false
     @Published var userEmail: String?
+    @Published var userAvatarURL: URL?
 
     let api = BloggerClient()
     let imageUploader: ImageUploading = GooglePhotosUploader()
@@ -18,16 +19,24 @@ final class AppState: ObservableObject {
         do {
             try await AuthManager.shared.signIn()
             isSignedIn = true
-            userEmail = AuthManager.shared.currentUser?.profile?.email
+            updateUserProfile()
         } catch {
             isSignedIn = false
         }
+    }
+
+    /// Reads the signed-in user's email and avatar URL from the auth session.
+    private func updateUserProfile() {
+        let profile = AuthManager.shared.currentUser?.profile
+        userEmail = profile?.email
+        userAvatarURL = profile?.imageURL(withDimension: 96)
     }
 
     func signOut() {
         AuthManager.shared.signOut()
         isSignedIn = false
         userEmail = nil
+        userAvatarURL = nil
     }
 
     /// Signs out the current Google account and immediately presents the
@@ -36,6 +45,7 @@ final class AppState: ObservableObject {
         AuthManager.shared.signOut()
         isSignedIn = false
         userEmail = nil
+        userAvatarURL = nil
         await signIn()
     }
 }

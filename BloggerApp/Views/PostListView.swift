@@ -43,7 +43,7 @@ struct PostListView: View {
                     ContentUnavailableView("No blogs", systemImage: "doc.text")
                 }
             }
-            .navigationTitle(selectedBlog?.name ?? "Posts")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -61,8 +61,19 @@ struct PostListView: View {
                                 }
                             }
                         } label: {
-                            Label(selectedBlog?.name ?? "Select blog", systemImage: "chevron.down")
-                                .labelStyle(.titleAndIcon)
+                            HStack(spacing: 6) {
+                                Text(selectedBlog?.name ?? "Select blog")
+                                    .lineLimit(1)
+                                Image(systemName: "chevron.down")
+                                    .font(.caption2.bold())
+                            }
+                            .font(.subheadline.weight(.medium))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .strokeBorder(.quaternary, lineWidth: 1)
+                            )
                         }
                     }
                 }
@@ -123,7 +134,7 @@ struct PostListView: View {
                             Label("Sign out", systemImage: "arrow.right.square")
                         }
                     } label: {
-                        Image(systemName: "person.crop.circle")
+                        AccountAvatarView(url: appState.userAvatarURL)
                     }
                 }
             }
