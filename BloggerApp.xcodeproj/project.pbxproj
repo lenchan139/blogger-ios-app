@@ -72,6 +72,8 @@
 			name = BloggerApp;
 			packageProductDependencies = (
 				AA000000000000000000000A /* GoogleSignIn */,
+				AA0000000000000000000022 /* Aztec */,
+				AA0000000000000000000032 /* InfomaniakRichHTMLEditor */,
 			);
 			productName = BloggerApp;
 			productType = "com.apple.product-type.application";
@@ -103,6 +105,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				AA000000000000000000000D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				AA0000000000000000000021 /* XCRemoteSwiftPackageReference "AztecEditor-iOS" */,
+				AA0000000000000000000031 /* XCRemoteSwiftPackageReference "swift-rich-html-editor" */,
 			);
 			productRefGroup = AA0000000000000000000004 /* Products */;
 			projectDirPath = "";
@@ -341,6 +345,22 @@
 				minimumVersion = 7.0.0;
 			};
 		};
+		AA0000000000000000000021 /* XCRemoteSwiftPackageReference "AztecEditor-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/wordpress-mobile/AztecEditor-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.20.0;
+			};
+		};
+		AA0000000000000000000031 /* XCRemoteSwiftPackageReference "swift-rich-html-editor" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Infomaniak/swift-rich-html-editor";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -348,6 +368,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AA000000000000000000000D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
+		};
+		AA0000000000000000000022 /* Aztec */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000021 /* XCRemoteSwiftPackageReference "AztecEditor-iOS" */;
+			productName = Aztec;
+		};
+		AA0000000000000000000032 /* InfomaniakRichHTMLEditor */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000031 /* XCRemoteSwiftPackageReference "swift-rich-html-editor" */;
+			productName = InfomaniakRichHTMLEditor;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -1,68 +1,165 @@
 import SwiftUI
 import UIKit
+import InfomaniakRichHTMLEditor
 
-/// A UIViewRepresentable that renders and edits HTML content in a UITextView,
-/// keeping the underlying HTML string in sync. Used as the post body editor.
-struct RichTextEditor: UIViewRepresentable {
+/// An Apple Notes–style rich HTML editor: a clean, plain editing surface with
+/// the formatting controls in the keyboard accessory bar (invoked via an "Aa"
+/// button), backed by the Infomaniak editor (renders tables + images natively).
+struct RichTextEditor: View {
     @Binding var html: String
-    var isEditable: Bool = true
+    @StateObject private var textAttributes: TextAttributes
+    @StateObject private var router: EditorRouter
+    private let accessoryView: UIView
 
-    func makeUIView(context: Context) -> UITextView {
-        let textView = UITextView()
-        textView.isEditable = isEditable
-        textView.isScrollEnabled = true
-        textView.font = UIFont.preferredFont(forTextStyle: .body)
-        textView.backgroundColor = .clear
-        textView.delegate = context.coordinator
-        // So we can detect changes from the HTML side.
-        textView.text = Self.plainText(from: html)
-        return textView
+    init(html: Binding<String>) {
+        _html = html
+        let textAttributes = TextAttributes()
+        let router = EditorRouter()
+        _textAttributes = StateObject(wrappedValue: textAttributes)
+        _router = StateObject(wrappedValue: router)
+
+        let controller = UIHostingController(
+            rootView: AccessoryToolbar(textAttributes: textAttributes, router: router)
+        )
+        controller.view.backgroundColor = .clear
+        controller.view.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44)
+        accessoryView = controller.view
     }
 
-    func updateUIView(_ uiView: UITextView, context: Context) {
-        let incomingPlain = Self.plainText(from: html)
-        if uiView.text != incomingPlain {
-            uiView.text = incomingPlain
-        }
-        uiView.isEditable = isEditable
+    var body: some View {
+        RichHTMLEditor(html: $html, textAttributes: textAttributes)
+            .editorScrollable(true)
+            .editorCSS(editorCSS)
+            .editorInputAccessoryView(accessoryView)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .sheet(isPresented: $router.showLinkSheet) {
+                LinkInputView(textAttributes: textAttributes)
+            }
     }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+    private var editorCSS: String {
+        """
+        :root {
+            --paragraph-spacing: 1em;
+            --sl-color-border: #CCC;
+            --sl-color-hairline: #DDD;
+            --sl-text-sm: 14px;
+            --sl-text-code-sm: 14px;
+        }
+        #swift-rich-html-editor { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 17px; line-height: 1.5; padding: 8px; }
+        img { max-width: 100%; height: auto; }
+        #swift-rich-html-editor table { display: table !important; border-collapse: collapse; width: 100%; max-width: 100%; }
+        #swift-rich-html-editor table tr { display: table-row !important; }
+        #swift-rich-html-editor table td, #swift-rich-html-editor table th { display: table-cell !important; border: 1px solid #CCC; padding: 6px; }
+        """
+    }
+}
+
+/// Shared state between the editor and its accessory toolbar.
+final class EditorRouter: ObservableObject {
+    @Published var showLinkSheet = false
+}
+
+// MARK: - Apple Notes style accessory toolbar
+
+private struct AccessoryToolbar: View {
+    @ObservedObject var textAttributes: TextAttributes
+    @ObservedObject var router: EditorRouter
+
+    @State private var expanded = false
+
+    var body: some View {
+        HStack(spacing: 2) {
+            // Notes-style "Aa" button toggles the formatting panel.
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) { expanded.toggle() }
+            } label: {
+                Image(systemName: "textformat.size")
+                    .font(.system(size: 17, weight: .medium))
+                    .frame(width: 34, height: 30)
+                    .foregroundStyle(expanded ? Color.accentColor : Color.primary)
+                    .background(expanded ? Color.accentColor.opacity(0.15) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+
+            if expanded {
+                toolButton("bold", active: textAttributes.hasBold) { textAttributes.bold() }
+                toolButton("italic", active: textAttributes.hasItalic) { textAttributes.italic() }
+                toolButton("underline", active: textAttributes.hasUnderline) { textAttributes.underline() }
+                toolButton("strikethrough", active: textAttributes.hasStrikethrough) { textAttributes.strikethrough() }
+                divider
+                toolButton("list.bullet", active: textAttributes.hasUnorderedList) { textAttributes.unorderedList() }
+                toolButton("list.number", active: textAttributes.hasOrderedList) { textAttributes.orderedList() }
+                divider
+                toolButton("link", active: textAttributes.hasLink) { router.showLinkSheet = true }
+                divider
+                toolButton("arrow.uturn.backward") { textAttributes.undo() }
+                toolButton("arrow.uturn.forward") { textAttributes.redo() }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(height: 44)
+        .padding(.horizontal, 8)
     }
 
-    private static func plainText(from html: String) -> String {
-        guard let data = html.data(using: .unicode),
-              let attributed = try? NSAttributedString(
-                  data: data,
-                  options: [.documentType: NSAttributedString.DocumentType.html,
-                            .characterEncoding: String.Encoding.utf8.rawValue],
-                  documentAttributes: nil
-              ) else {
-            return html
-        }
-        return attributed.string
+    private var divider: some View {
+        Rectangle()
+            .fill(Color(.separator))
+            .frame(width: 1, height: 20)
+            .padding(.horizontal, 4)
     }
 
-    final class Coordinator: NSObject, UITextViewDelegate {
-        var parent: RichTextEditor
-
-        init(_ parent: RichTextEditor) {
-            self.parent = parent
+    private func toolButton(_ systemName: String, active: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 15, weight: .medium))
+                .frame(width: 32, height: 30)
+                .foregroundStyle(active ? Color.accentColor : Color.primary)
+                .background(active ? Color.accentColor.opacity(0.15) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
         }
+        .buttonStyle(.plain)
+        .transition(.move(edge: .leading).combined(with: .opacity))
+    }
+}
 
-        func textViewDidChange(_ textView: UITextView) {
-            guard let html = Self.html(from: textView.text) else { return }
-            parent.html = html
-        }
+// MARK: - Link input
 
-        private static func html(from plainText: String) -> String? {
-            let html = plainText
-                .replacingOccurrences(of: "&", with: "&amp;")
-                .replacingOccurrences(of: "<", with: "&lt;")
-                .replacingOccurrences(of: ">", with: "&gt;")
-                .replacingOccurrences(of: "\n", with: "<br>")
-            return "<div>\(html)</div>"
+private struct LinkInputView: View {
+    @ObservedObject var textAttributes: TextAttributes
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var text = ""
+    @State private var url = "https://"
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Link text", text: $text)
+                    TextField("URL", text: $url)
+                        .keyboardType(.URL)
+                        .autocapitalization(.none)
+                        .autocorrectionDisabled()
+                }
+            }
+            .navigationTitle("Add link")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        if let linkURL = URL(string: url) {
+                            let label = text.isEmpty ? nil : text
+                            textAttributes.addLink(url: linkURL, text: label)
+                        }
+                        dismiss()
+                    }
+                    .bold()
+                }
+            }
         }
     }
 }

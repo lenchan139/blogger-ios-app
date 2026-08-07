@@ -19,30 +19,23 @@ struct PageEditorView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                TextField("Page title", text: $title, axis: .vertical)
-                    .font(.title2.bold())
+        VStack(spacing: 0) {
+            TextField("Page title", text: $title, axis: .vertical)
+                .font(.title2.bold())
+                .padding(.horizontal)
+                .padding(.vertical, 12)
 
-                RichTextEditor(html: $htmlBody)
-                    .frame(minHeight: 280)
-                    .overlay(alignment: .topLeading) {
-                        if htmlBody.isEmpty {
-                            Text("Write your page…")
-                                .foregroundStyle(.secondary)
-                                .allowsHitTesting(false)
-                                .padding(.top, 8)
-                        }
-                    }
-                    .padding(.top, 8)
+            Divider()
 
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
+            RichTextEditor(html: $htmlBody)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .padding()
             }
-            .padding()
         }
         .navigationTitle(existingPage == nil ? "New page" : "Edit page")
         .navigationBarTitleDisplayMode(.inline)

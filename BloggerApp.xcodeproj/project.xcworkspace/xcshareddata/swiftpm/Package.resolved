@@ -1,5 +1,5 @@
 {
-  "originHash" : "e11c677f3fdba414eff21261c4b5d041d25f436a83c1faaba2da6b9357e42259",
+  "originHash" : "e5d0830f5c2bd766a13dbf3ede650fbade4bf8512360ea3d0e63655e18df3d55",
   "pins" : [
     {
       "identity" : "appauth-ios",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "2781038865a80e2c425a1da12cc1327bcd56501f",
         "version" : "1.7.6"
+      }
+    },
+    {
+      "identity" : "azteceditor-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/wordpress-mobile/AztecEditor-iOS",
+      "state" : {
+        "revision" : "f20f4102aab2dd9a14dffe5d42af069dcb08538f",
+        "version" : "1.20.0"
       }
     },
     {
@@ -35,6 +44,15 @@
       "state" : {
         "revision" : "5d7d66f647400952b1758b230e019b07c0b4b22a",
         "version" : "4.1.1"
+      }
+    },
+    {
+      "identity" : "swift-rich-html-editor",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Infomaniak/swift-rich-html-editor",
+      "state" : {
+        "revision" : "d4e8bd9b1bf62bd2a7ad81ce4e94170b2d6f7ab7",
+        "version" : "1.4.1"
       }
     }
   ],

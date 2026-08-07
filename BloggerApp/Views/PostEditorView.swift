@@ -41,40 +41,34 @@ struct PostEditorView: View {
     private var hasLocalChanges: Bool { restoredFromDraft }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                TextField("Post title", text: $title, axis: .vertical)
-                    .font(.title2.bold())
+        VStack(spacing: 0) {
+            TextField("Post title", text: $title, axis: .vertical)
+                .font(.title2.bold())
+                .padding(.horizontal)
+                .padding(.vertical, 12)
 
-                if showingSource {
-                    TextEditor(text: $htmlBody)
-                        .font(.system(.body, design: .monospaced))
-                        .frame(minHeight: 280)
-                        .overlay(alignment: .topLeading) {
-                            if htmlBody.isEmpty {
-                                Text("HTML source")
-                                    .foregroundStyle(.secondary)
-                                    .allowsHitTesting(false)
-                                    .padding(.top, 8)
-                                    .padding(.leading, 5)
-                            }
-                        }
-                        .padding(6)
-                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
-                } else {
-                    RichTextEditor(html: $htmlBody)
-                        .frame(minHeight: 280)
-                        .overlay(alignment: .topLeading) {
-                            if htmlBody.isEmpty {
-                                Text("Write your post…")
-                                    .foregroundStyle(.secondary)
-                                    .allowsHitTesting(false)
-                                    .padding(.top, 8)
-                            }
-                        }
-                        .padding(.top, 8)
-                }
+            Divider()
 
+            if showingSource {
+                TextEditor(text: $htmlBody)
+                    .font(.system(.body, design: .monospaced))
+                    .overlay(alignment: .topLeading) {
+                        if htmlBody.isEmpty {
+                            Text("HTML source")
+                                .foregroundStyle(.secondary)
+                                .allowsHitTesting(false)
+                                .padding(.top, 8)
+                                .padding(.leading, 5)
+                        }
+                    }
+                    .padding(6)
+                    .background(Color(.secondarySystemBackground))
+            } else {
+                RichTextEditor(html: $htmlBody)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
                 LabelEditor(labels: $labels)
 
                 if hasLocalChanges {

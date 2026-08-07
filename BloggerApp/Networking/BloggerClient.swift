@@ -46,9 +46,6 @@ final class BloggerClient {
 
     func listPosts(blogId: String, pageToken: String? = nil, fetchBodies: Bool = true, status: String? = nil) async throws -> PostList {
         var query: [String: String] = ["fetchBodies": fetchBodies ? "true" : "false"]
-        // view=ADMIN is required to retrieve draft (and scheduled) posts; the
-        // default READER view only surfaces published posts.
-        query["view"] = "ADMIN"
         if let pageToken { query["pageToken"] = pageToken }
         if let status { query["status"] = status }
         return try await request(path: "/blogs/\(blogId)/posts", query: query)

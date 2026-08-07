@@ -44,12 +44,30 @@ struct Post: Codable, Identifiable {
         let span: String?
     }
 
-    /// Raw enum matching Blogger's `status` values.
+    /// Raw enum matching Blogger's `status` values. Blogger returns these in
+    /// uppercase (e.g. "DRAFT"), so decoding is case-insensitive.
     enum PostStatus: String, Codable {
         case live
         case draft
         case scheduled
         case error
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let raw = try container.decode(String.self)
+            guard let status = PostStatus(rawValue: raw.lowercased()) else {
+                throw DecodingError.dataCorruptedError(
+                    in: container,
+                    debugDescription: "Unknown post status: \(raw)"
+                )
+            }
+            self = status
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(rawValue.uppercased())
+        }
     }
 }
 

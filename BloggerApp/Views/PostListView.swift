@@ -6,19 +6,38 @@ struct PostListView: View {
     @EnvironmentObject private var appState: AppState
 
     enum Filter: String, CaseIterable {
-        case published, drafts
-        // Blogger's status query param uses "live" for published posts.
-        var status: String { self == .published ? "live" : "draft" }
+        case all, published, drafts, locals
+        // Blogger's status query param: "live" for published, "draft" for drafts,
+        // nil for "all" (no filter) and "locals" (not an API call).
+        var status: String? {
+            switch self {
+            case .all, .locals: return nil
+            case .published: return "live"
+            case .drafts: return "draft"
+            }
+        }
+        var title: String {
+            switch self {
+            case .all: return "All"
+            case .published: return "Published"
+            case .drafts: return "Drafts"
+            case .locals: return "Local"
+            }
+        }
     }
 
     @State private var filter: Filter = .published
     @State private var blogs: [Blog] = []
     @State private var selectedBlogId: String?
-    @State private var posts: [Post] = []
+    @State private var postsByFilter: [Filter: [Post]] = [:]
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showingLocalDrafts = false
     @State private var commentsPost: Post?
+    @State private var labelPost: Post?
+    @State private var labelDraftLabels: [String] = []
+    @State private var discardPost: Post?
+    @State private var previewItem: WebPreviewItem?
 
     private var selectedBlog: Blog? {
         blogs.first { $0.id == selectedBlogId } ?? blogs.first
@@ -141,14 +160,11 @@ struct PostListView: View {
             .task { await loadBlogs() }
             .task(id: selectedBlogId) {
                 guard selectedBlog != nil else { return }
-                await loadPosts()
-            }
-            .task(id: filter) {
-                guard selectedBlog != nil else { return }
+                postsByFilter = [:]
                 await loadPosts()
             }
             .onChange(of: selectedBlog?.id) { _, _ in
-                posts = []
+                postsByFilter = [:]
             }
             .sheet(isPresented: $showingLocalDrafts) {
                 if let blog = selectedBlog {
@@ -162,7 +178,46 @@ struct PostListView: View {
                     }
                 }
             }
+            .sheet(item: $labelPost) { post in
+                if let blog = selectedBlog {
+                    NavigationStack {
+                        LabelsEditSheet(
+                            title: post.title ?? "Untitled",
+                            labels: $labelDraftLabels,
+                            onSave: {
+                                Task { await saveLabels(for: post, labels: labelDraftLabels) }
+                            }
+                        )
+                    }
+                }
+            }
+            .sheet(item: $previewItem) { item in
+                NavigationStack {
+                    WebPreviewView(url: item.url)
+                        .navigationTitle("Preview")
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+            .confirmationDialog(
+                "Discard this post? This permanently deletes it.",
+                isPresented: discardBinding,
+                titleVisibility: .visible
+            ) {
+                Button("Discard", role: .destructive) {
+                    if let post = discardPost {
+                        Task { await deletePost(post) }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            }
         }
+    }
+
+    private var discardBinding: Binding<Bool> {
+        Binding(
+            get: { discardPost != nil },
+            set: { if !$0 { discardPost = nil } }
+        )
     }
 
     @ViewBuilder
@@ -170,36 +225,120 @@ struct PostListView: View {
         VStack(spacing: 0) {
             Picker("Filter", selection: $filter) {
                 ForEach(Filter.allCases, id: \.self) { f in
-                    Text(f == .published ? "Published" : "Drafts")
+                    Text(f.title)
                 }
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
             .padding(.vertical, 8)
 
-            if posts.isEmpty {
-                ContentUnavailableView(
-                    "No \(filter == .published ? "published" : "draft") posts",
-                    systemImage: "doc.text"
-                )
-            } else {
-                List(posts) { post in
+            TabView(selection: $filter) {
+                ForEach(Filter.allCases, id: \.self) { f in
+                    postsPage(for: blog, filter: f)
+                        .tag(f)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private func postsPage(for blog: Blog, filter: Filter) -> some View {
+        if filter == .locals {
+            localDraftsPage(for: blog)
+        } else {
+            apiPostsPage(for: blog, filter: filter)
+        }
+    }
+
+    @ViewBuilder
+    private func localDraftsPage(for blog: Blog) -> some View {
+        let drafts = appState.drafts.drafts.filter { $0.blogId == blog.id }
+        if drafts.isEmpty {
+            ContentUnavailableView(
+                "No local drafts",
+                systemImage: "externaldrive",
+                description: Text("Unsaved edits are saved here automatically.")
+            )
+        } else {
+            List {
+                ForEach(drafts) { draft in
                     NavigationLink {
-                        PostEditorView(blog: blog, post: post)
+                        PostEditorView(blog: blog, post: nil, draft: draft)
                     } label: {
-                        PostRow(post: post)
-                    }
-                    .contextMenu {
-                        Button {
-                            commentsPost = post
-                        } label: {
-                            Label("Comments", systemImage: "text.bubble")
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(draft.title.isEmpty ? "Untitled draft" : draft.title)
+                                .font(.headline)
+                            Text("Edited \(draft.updatedAt.formatted(.relative(presentation: .named)))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
+                        .padding(.vertical, 4)
                     }
                 }
-                .listStyle(.plain)
-                .refreshable { await loadPosts() }
             }
+            .listStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private func apiPostsPage(for blog: Blog, filter: Filter) -> some View {
+        let posts = postsByFilter[filter] ?? []
+        if posts.isEmpty {
+            ContentUnavailableView(
+                "No \(filter == .published ? "published" : "draft") posts",
+                systemImage: "doc.text"
+            )
+        } else {
+            List(posts) { post in
+                NavigationLink {
+                    PostEditorView(blog: blog, post: post)
+                } label: {
+                    PostRow(post: post)
+                }
+                .contextMenu {
+                    Button {
+                        commentsPost = post
+                    } label: {
+                        Label("Comments", systemImage: "text.bubble")
+                    }
+                    Button {
+                        Task { await togglePublish(post) }
+                    } label: {
+                        if post.status == .draft {
+                            Label("Publish", systemImage: "paperplane.fill")
+                        } else {
+                            Label("Revert to draft", systemImage: "arrow.uturn.backward")
+                        }
+                    }
+                    Button {
+                        labelPost = post
+                        labelDraftLabels = post.labels ?? []
+                    } label: {
+                        Label("Apply labels", systemImage: "tag")
+                    }
+                    Button {
+                        if let urlString = post.url, let url = URL(string: urlString) {
+                            previewItem = WebPreviewItem(url: url)
+                        }
+                    } label: {
+                        Label("Preview", systemImage: "eye")
+                    }
+                    if let urlString = post.url, let url = URL(string: urlString) {
+                        ShareLink(item: url) {
+                            Label("Share link", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                    Button(role: .destructive) {
+                        discardPost = post
+                    } label: {
+                        Label("Discard post", systemImage: "trash")
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .refreshable { await loadPosts(for: filter) }
         }
     }
 
@@ -217,16 +356,68 @@ struct PostListView: View {
     }
 
     private func loadPosts() async {
+        guard selectedBlog != nil else { return }
+        for filter in Filter.allCases where filter != .locals {
+            await loadPosts(for: filter)
+        }
+    }
+
+    private func loadPosts(for filter: Filter) async {
         guard let blog = selectedBlog else { return }
+        if filter == .locals { return }
         isLoading = true
         errorMessage = nil
         do {
             let list = try await appState.api.listPosts(blogId: blog.id, status: filter.status)
-            posts = list.items ?? []
+            postsByFilter[filter] = list.items ?? []
         } catch {
+            // Pull-to-refresh can cancel the in-flight task; that's not an error.
+            if Task.isCancelled { return }
+            if let urlErr = error as? URLError, urlErr.code == .cancelled { return }
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    // MARK: - Post actions
+
+    private func togglePublish(_ post: Post) async {
+        guard let blog = selectedBlog else { return }
+        do {
+            if post.status == .draft {
+                _ = try await appState.api.publishPost(blogId: blog.id, postId: post.id)
+            } else {
+                _ = try await appState.api.revertPost(blogId: blog.id, postId: post.id)
+            }
+            await loadPosts()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func saveLabels(for post: Post, labels: [String]) async {
+        guard let blog = selectedBlog else { return }
+        var patched = post
+        patched.labels = labels.isEmpty ? nil : labels
+        do {
+            _ = try await appState.api.patchPost(patched, blogId: blog.id)
+            labelPost = nil
+            await loadPosts()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func deletePost(_ post: Post) async {
+        guard let blog = selectedBlog else { return }
+        do {
+            try await appState.api.deletePost(blogId: blog.id, postId: post.id)
+            discardPost = nil
+            appState.drafts.removeForPost(blogId: blog.id, postId: post.id)
+            await loadPosts()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 
@@ -262,5 +453,86 @@ private struct PostRow: View {
     private static func relative(_ iso: String) -> String {
         guard let date = ISO8601DateFormatter().date(from: iso) else { return "" }
         return RelativeDateTimeFormatter().localizedString(for: date, relativeTo: Date())
+    }
+}
+
+// MARK: - Labels editor
+
+/// Edits a post's labels in a sheet.
+struct LabelsEditSheet: View {
+    let title: String
+    @Binding var labels: [String]
+    var onSave: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var newLabel = ""
+
+    var body: some View {
+        Form {
+            Section("Post") {
+                Text(title)
+                    .font(.subheadline)
+            }
+            Section("Labels") {
+                ForEach(labels, id: \.self) { label in
+                    HStack {
+                        Text(label)
+                        Spacer()
+                        Button {
+                            labels.removeAll { $0 == label }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                HStack {
+                    TextField("Add a label", text: $newLabel)
+                    Button("Add") {
+                        let trimmed = newLabel.trimmingCharacters(in: .whitespaces)
+                        if !trimmed.isEmpty {
+                            labels.append(trimmed)
+                            newLabel = ""
+                        }
+                    }
+                    .disabled(newLabel.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+        .navigationTitle("Apply labels")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") { dismiss() }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    onSave()
+                }
+                .bold()
+            }
+        }
+    }
+}
+
+// MARK: - Web preview
+
+/// Simple WKWebView wrapper for previewing a post.
+import WebKit
+
+struct WebPreviewItem: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+struct WebPreviewView: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> WKWebView {
+        WKWebView()
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        uiView.load(URLRequest(url: url))
     }
 }
