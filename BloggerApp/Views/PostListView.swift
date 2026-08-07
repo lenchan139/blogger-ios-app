@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// Home screen: lists the selected blog's posts, with a blog selector (top-left)
-/// and a Google account switcher (top-right).
+/// The posts section: lists the selected blog's posts, with a blog selector
+/// (top-left) and a Google account switcher (top-right).
 struct PostListView: View {
     @EnvironmentObject private var appState: AppState
+    let blogs: [Blog]
+    @Binding var selectedBlogId: String?
 
     enum Filter: String, CaseIterable {
         case all, published, drafts, locals
@@ -27,17 +29,15 @@ struct PostListView: View {
     }
 
     @State private var filter: Filter = .published
-    @State private var blogs: [Blog] = []
-    @State private var selectedBlogId: String?
     @State private var postsByFilter: [Filter: [Post]] = [:]
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var showingLocalDrafts = false
     @State private var commentsPost: Post?
     @State private var labelPost: Post?
     @State private var labelDraftLabels: [String] = []
     @State private var discardPost: Post?
     @State private var previewItem: WebPreviewItem?
+    @State private var showNewPost = false
 
     private var selectedBlog: Blog? {
         blogs.first { $0.id == selectedBlogId } ?? blogs.first
@@ -48,16 +48,6 @@ struct PostListView: View {
             Group {
                 if let blog = selectedBlog {
                     postList(for: blog)
-                } else if isLoading {
-                    ProgressView("Loading…")
-                } else if let errorMessage {
-                    ContentUnavailableView {
-                        Label("Couldn't load posts", systemImage: "exclamationmark.triangle")
-                    } description: {
-                        Text(errorMessage)
-                    } actions: {
-                        Button("Retry") { Task { await loadBlogs() } }
-                    }
                 } else {
                     ContentUnavailableView("No blogs", systemImage: "doc.text")
                 }
@@ -97,46 +87,12 @@ struct PostListView: View {
                     }
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    Menu {
-                        if let blog = selectedBlog {
-                            NavigationLink {
-                                BlogInfoView(blog: blog)
-                            } label: {
-                                Label("Blog info", systemImage: "info.circle")
-                            }
-                            NavigationLink {
-                                PagesListView(blog: blog)
-                            } label: {
-                                Label("Pages", systemImage: "doc.plaintext")
-                            }
-                            NavigationLink {
-                                AllCommentsView(blog: blog)
-                            } label: {
-                                Label("All comments", systemImage: "text.bubble")
-                            }
-                            NavigationLink {
-                                StatsView(blog: blog)
-                            } label: {
-                                Label("Stats", systemImage: "chart.bar")
-                            }
-                        }
-                        Button {
-                            showingLocalDrafts = true
-                        } label: {
-                            Label("Local drafts", systemImage: "externaldrive")
-                        }
-                        NavigationLink {
-                            if let blog = selectedBlog {
-                                PostEditorView(blog: blog, post: nil)
-                            } else {
-                                Text("Select a blog first")
-                            }
-                        } label: {
-                            Label("New post", systemImage: "square.and.pencil")
-                        }
+                    Button {
+                        showNewPost = true
                     } label: {
                         Image(systemName: "square.and.pencil")
                     }
+                    .accessibilityLabel("New post")
                     Menu {
                         if let email = appState.userEmail {
                             Text(email)
@@ -157,7 +113,11 @@ struct PostListView: View {
                     }
                 }
             }
-            .task { await loadBlogs() }
+            .sheet(isPresented: $showNewPost) {
+                if let blog = selectedBlog {
+                    NavigationStack { PostEditorView(blog: blog, post: nil) }
+                }
+            }
             .task(id: selectedBlogId) {
                 guard selectedBlog != nil else { return }
                 postsByFilter = [:]
@@ -165,11 +125,6 @@ struct PostListView: View {
             }
             .onChange(of: selectedBlog?.id) { _, _ in
                 postsByFilter = [:]
-            }
-            .sheet(isPresented: $showingLocalDrafts) {
-                if let blog = selectedBlog {
-                    LocalDraftsView(blog: blog)
-                }
             }
             .sheet(item: $commentsPost) { post in
                 if let blog = selectedBlog {
@@ -353,19 +308,6 @@ struct PostListView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.15), value: isLoading)
-        }
-    }
-
-    private func loadBlogs() async {
-        errorMessage = nil
-        do {
-            let list = try await appState.api.listUserBlogs()
-            blogs = list.items ?? []
-            if selectedBlogId == nil {
-                selectedBlogId = blogs.first?.id
-            }
-        } catch {
-            errorMessage = error.localizedDescription
         }
     }
 

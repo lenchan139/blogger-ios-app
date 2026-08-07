@@ -67,7 +67,7 @@ struct PostEditorView: View {
                     .background(Color(.secondarySystemBackground))
             } else {
                 RichTextEditor(html: $htmlBody)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280, maxHeight: .infinity)
             }
 
             VStack(alignment: .leading, spacing: 8) {

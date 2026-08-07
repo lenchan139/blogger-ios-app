@@ -6,7 +6,7 @@ struct RootView: View {
     var body: some View {
         Group {
             if appState.isSignedIn {
-                PostListView()
+                HomeView()
             } else {
                 SignInView()
             }

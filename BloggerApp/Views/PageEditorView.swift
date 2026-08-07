@@ -28,7 +28,7 @@ struct PageEditorView: View {
             Divider()
 
             RichTextEditor(html: $htmlBody)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280, maxHeight: .infinity)
 
             if let errorMessage {
                 Text(errorMessage)
