@@ -26,7 +26,7 @@ struct PageEditorView: View {
                     .font(.title2.bold())
 
                 RichEditorView(html: $htmlBody, editorRef: richEditorRef)
-                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 320)
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 320, maxHeight: 480)
 
                 if let errorMessage {
                     Text(errorMessage)

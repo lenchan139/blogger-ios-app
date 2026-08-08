@@ -2,108 +2,40 @@ import SwiftUI
 import UIKit
 import WebKit
 
-/// TipTap (ProseMirror) editor embedded in a WKWebView, styled and wired the
-/// kMail way: HTML syncs through the `html` binding, and a SwiftUI toolbar is
-/// pinned at the bottom via `.safeAreaInset` while the editor is focused.
+/// TipTap (ProseMirror) editor embedded in a WKWebView. The toolbar is a
+/// fixed in-page row (tiptap "simple editor" style); HTML syncs through the
+/// `html` binding via the JS bridge.
 struct RichEditorView: View {
     @Binding var html: String
     let editorRef: RichEditorRef
     var onImageRequested: (() -> Void)?
 
-    @FocusState private var isEditorFocused: Bool
     @State private var showLinkSheet = false
     @State private var linkText = ""
     @State private var linkURL = "https://"
-    @State private var state = EditorStateSnapshot()
-    @State private var hasLoaded = false
+
+    init(
+        html: Binding<String>,
+        editorRef: RichEditorRef,
+        onImageRequested: (() -> Void)? = nil
+    ) {
+        _html = html
+        self.editorRef = editorRef
+        self.onImageRequested = onImageRequested
+        editorRef.onImageRequested = onImageRequested
+    }
 
     var body: some View {
-        TipTapWebView(html: $html, editorRef: editorRef, onState: { snapshot in
-            state = snapshot
-            hasLoaded = true
-        })
+        TipTapWebView(
+            html: $html,
+            editorRef: editorRef,
+            onLinkRequested: { showLinkSheet = true }
+        )
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 320)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if isEditorFocused {
-                toolbar
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
         .sheet(isPresented: $showLinkSheet) {
             linkSheet
         }
     }
-
-    // MARK: - Toolbar (kMail-style bottom bar)
-
-    private var toolbar: some View {
-        HStack(spacing: 4) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    toolbarButton("arrow.uturn.backward") { editorRef.command("undo") }
-                    toolbarButton("arrow.uturn.forward") { editorRef.command("redo") }
-
-                    Divider().frame(height: 22)
-
-                    toolbarButton("bold", isActivated: state.bold) { editorRef.command("bold") }
-                    toolbarButton("italic", isActivated: state.italic) { editorRef.command("italic") }
-                    toolbarButton("underline", isActivated: state.underline) { editorRef.command("underline") }
-                    toolbarButton("strikethrough", isActivated: state.strike) { editorRef.command("strike") }
-
-                    Divider().frame(height: 22)
-
-                    toolbarButton("list.bullet", isActivated: state.bulletList) { editorRef.command("bulletList") }
-                    toolbarButton("list.number", isActivated: state.orderedList) { editorRef.command("orderedList") }
-                    toolbarButton("quote.opening", isActivated: state.blockquote) { editorRef.command("blockquote") }
-                    toolbarButton("minus") { editorRef.command("insertHorizontalRule") }
-
-                    Divider().frame(height: 22)
-
-                    toolbarButton("text.alignleft", isActivated: state.alignLeft) { editorRef.command("alignLeft") }
-                    toolbarButton("text.aligncenter", isActivated: state.alignCenter) { editorRef.command("alignCenter") }
-                    toolbarButton("text.alignright", isActivated: state.alignRight) { editorRef.command("alignRight") }
-
-                    Divider().frame(height: 22)
-
-                    toolbarButton("link", isActivated: state.hasLink) {
-                        if state.hasLink {
-                            editorRef.command("unlink")
-                        } else {
-                            linkText = ""
-                            linkURL = "https://"
-                            showLinkSheet = true
-                        }
-                    }
-                    if onImageRequested != nil {
-                        toolbarButton("photo.on.rectangle.angled") { onImageRequested?() }
-                    }
-                }
-                .padding(.horizontal, 12)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .padding(.vertical, 8)
-        .background(.regularMaterial)
-        .overlay(alignment: .top) { Divider() }
-        .animation(.default.speed(2), value: isEditorFocused)
-    }
-
-    private func toolbarButton(
-        _ systemName: String,
-        isActivated: Bool = false,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 17, weight: .regular))
-                .frame(width: 38, height: 38)
-                .background(isActivated ? Color.accentColor : Color(.systemGray5), in: RoundedRectangle(cornerRadius: 8))
-                .foregroundStyle(isActivated ? Color.white : Color.primary)
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Link sheet
 
     private var linkSheet: some View {
         NavigationStack {
@@ -136,42 +68,15 @@ struct RichEditorView: View {
     }
 }
 
-/// Selection state reported from the editor on every transaction.
-struct EditorStateSnapshot: Equatable {
-    var bold = false
-    var italic = false
-    var underline = false
-    var strike = false
-    var bulletList = false
-    var orderedList = false
-    var blockquote = false
-    var alignLeft = false
-    var alignCenter = false
-    var alignRight = false
-    var hasLink = false
-
-    init(dict: [String: Any]? = nil) {
-        guard let dict else { return }
-        bold = dict["bold"] as? Bool ?? false
-        italic = dict["italic"] as? Bool ?? false
-        underline = dict["underline"] as? Bool ?? false
-        strike = dict["strike"] as? Bool ?? false
-        bulletList = dict["bulletList"] as? Bool ?? false
-        orderedList = dict["orderedList"] as? Bool ?? false
-        blockquote = dict["blockquote"] as? Bool ?? false
-        alignLeft = dict["alignLeft"] as? Bool ?? false
-        alignCenter = dict["alignCenter"] as? Bool ?? false
-        alignRight = dict["alignRight"] as? Bool ?? false
-        hasLink = dict["hasLink"] as? Bool ?? false
-    }
-}
-
 /// Shared reference to the live editor for command execution.
 final class RichEditorRef: ObservableObject {
     weak var coordinator: TipTapWebView.Coordinator?
+    /// Wired by the host: opens the photo picker when the toolbar image
+    /// button is tapped inside the page.
+    var onImageRequested: (() -> Void)?
 
     func command(_ name: String) {
-        coordinator?.run(command: name)
+        coordinator?.run(script: "window.BloggerTipTap && window.BloggerTipTap.\(name)()")
     }
 
     func setLink(url: String) {
@@ -196,7 +101,7 @@ private extension String {
 struct TipTapWebView: UIViewRepresentable {
     @Binding var html: String
     let editorRef: RichEditorRef
-    var onState: (EditorStateSnapshot) -> Void
+    var onLinkRequested: (() -> Void)?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -205,8 +110,12 @@ struct TipTapWebView: UIViewRepresentable {
         config.userContentController = WKUserContentController()
         config.userContentController.add(context.coordinator, name: "editorState")
         config.userContentController.add(context.coordinator, name: "ready")
+        config.userContentController.add(context.coordinator, name: "editorError")
+        config.userContentController.add(context.coordinator, name: "editorFocus")
+        config.userContentController.add(context.coordinator, name: "insertImageRequested")
+        config.userContentController.add(context.coordinator, name: "insertLinkRequested")
 
-        let webView = WKWebView(frame: .zero, configuration: config)
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 320, height: 320), configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
@@ -236,13 +145,12 @@ struct TipTapWebView: UIViewRepresentable {
 
         func loadPage() {
             guard let webView, let bundleURL = Bundle.main.resourceURL else { return }
-            let editorDir = bundleURL.appendingPathComponent("Editor", isDirectory: true)
-            let htmlURL = editorDir.appendingPathComponent("editor.html")
+            let htmlURL = bundleURL.appendingPathComponent("editor.html")
             guard FileManager.default.fileExists(atPath: htmlURL.path) else {
                 print("[TipTap] editor.html missing at \(htmlURL.path)")
                 return
             }
-            webView.loadFileURL(htmlURL, allowingReadAccessTo: editorDir)
+            webView.loadFileURL(htmlURL, allowingReadAccessTo: bundleURL)
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -255,10 +163,6 @@ struct TipTapWebView: UIViewRepresentable {
         func setHTML(_ html: String) {
             guard hasLoaded else { return }
             run(script: "window.BloggerTipTap && window.BloggerTipTap.setHTML(\(html.jsEscaped))")
-        }
-
-        func run(command: String) {
-            run(script: "window.BloggerTipTap && window.BloggerTipTap.\(command)()")
         }
 
         func run(script: String) {
@@ -279,11 +183,20 @@ struct TipTapWebView: UIViewRepresentable {
                         self.parent.html = html
                     }
                 }
-                DispatchQueue.main.async { [weak self] in
-                    self?.parent.onState(EditorStateSnapshot(dict: dict))
-                }
             case "ready":
                 hasLoaded = true
+            case "editorError":
+                print("[TipTap] JS error: \(message.body)")
+            case "editorFocus":
+                break
+            case "insertImageRequested":
+                DispatchQueue.main.async { [weak self] in
+                    self?.parent.editorRef.onImageRequested?()
+                }
+            case "insertLinkRequested":
+                DispatchQueue.main.async { [weak self] in
+                    self?.parent.onLinkRequested?()
+                }
             default:
                 break
             }
