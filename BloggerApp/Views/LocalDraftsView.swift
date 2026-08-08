@@ -5,6 +5,7 @@ struct LocalDraftsView: View {
     let blog: Blog
     @EnvironmentObject private var appState: AppState
     @Environment(\.dismiss) private var dismiss
+    @State private var editingDraft: LocalDraft?
 
     private var drafts: [LocalDraft] {
         appState.drafts.drafts.filter { $0.blogId == blog.id }
@@ -22,8 +23,8 @@ struct LocalDraftsView: View {
                 } else {
                     List {
                         ForEach(drafts) { draft in
-                            NavigationLink {
-                                PostEditorView(blog: blog, post: nil, draft: draft)
+                            Button {
+                                editingDraft = draft
                             } label: {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(draft.title.isEmpty ? "Untitled draft" : draft.title)
@@ -39,6 +40,7 @@ struct LocalDraftsView: View {
                                 }
                                 .padding(.vertical, 4)
                             }
+                            .buttonStyle(.plain)
                         }
                         .onDelete(perform: deleteDrafts)
                     }
@@ -50,6 +52,9 @@ struct LocalDraftsView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .sheet(item: $editingDraft) { draft in
+                NavigationStack { PostEditorView(blog: blog, post: nil, draft: draft) }
             }
         }
     }

@@ -38,6 +38,8 @@ struct PostListView: View {
     @State private var discardPost: Post?
     @State private var previewItem: WebPreviewItem?
     @State private var showNewPost = false
+    @State private var editingPost: Post?
+    @State private var editingDraft: LocalDraft?
 
     private var selectedBlog: Blog? {
         blogs.first { $0.id == selectedBlogId } ?? blogs.first
@@ -116,6 +118,16 @@ struct PostListView: View {
             .sheet(isPresented: $showNewPost) {
                 if let blog = selectedBlog {
                     NavigationStack { PostEditorView(blog: blog, post: nil) }
+                }
+            }
+            .sheet(item: $editingPost) { post in
+                if let blog = selectedBlog {
+                    NavigationStack { PostEditorView(blog: blog, post: post) }
+                }
+            }
+            .sheet(item: $editingDraft) { draft in
+                if let blog = selectedBlog {
+                    NavigationStack { PostEditorView(blog: blog, post: nil, draft: draft) }
                 }
             }
             .task(id: selectedBlogId) {
@@ -219,8 +231,8 @@ struct PostListView: View {
         } else {
             List {
                 ForEach(drafts) { draft in
-                    NavigationLink {
-                        PostEditorView(blog: blog, post: nil, draft: draft)
+                    Button {
+                        editingDraft = draft
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(draft.title.isEmpty ? "Untitled draft" : draft.title)
@@ -231,6 +243,7 @@ struct PostListView: View {
                         }
                         .padding(.vertical, 4)
                     }
+                    .buttonStyle(.plain)
                 }
             }
             .listStyle(.plain)
@@ -252,11 +265,12 @@ struct PostListView: View {
             }
         } else {
             List(posts) { post in
-                NavigationLink {
-                    PostEditorView(blog: blog, post: post)
+                Button {
+                    editingPost = post
                 } label: {
                     PostRow(post: post)
                 }
+                .buttonStyle(.plain)
                 .contextMenu {
                     Button {
                         commentsPost = post
