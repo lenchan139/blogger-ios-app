@@ -129,6 +129,10 @@ struct TipTapWebView: UIViewRepresentable {
         webView.scrollView.keyboardDismissMode = .interactive
         // Let the host ScrollView own scrolling -> single scroll for the page.
         webView.scrollView.isScrollEnabled = false
+        webView.scrollView.bounces = false
+        webView.scrollView.alwaysBounceVertical = false
+        webView.scrollView.showsVerticalScrollIndicator = false
+        webView.scrollView.showsHorizontalScrollIndicator = false
         webView.navigationDelegate = context.coordinator
         context.coordinator.webView = webView
         editorRef.coordinator = context.coordinator
@@ -202,7 +206,9 @@ struct TipTapWebView: UIViewRepresentable {
                 if let h = message.body as? NSNumber {
                     let newHeight = CGFloat(h.doubleValue)
                     DispatchQueue.main.async { [weak self] in
-                        guard let self, abs(self.parent.height - newHeight) > 1 else { return }
+                        guard let self else { return }
+                        print("[TipTap] height reported: \(newHeight)")
+                        guard abs(self.parent.height - newHeight) > 1 else { return }
                         self.parent.height = newHeight
                     }
                 }

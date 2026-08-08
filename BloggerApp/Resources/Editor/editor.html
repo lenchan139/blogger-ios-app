@@ -6,11 +6,11 @@
     <title>Blogger Editor</title>
     <style>
         :root {
-            --toolbar-bg: rgba(248, 248, 248, 0.96);
-            --toolbar-border: rgba(60, 60, 67, 0.15);
-            --button-fg: #3c3c43;
-            --button-active: #f57c03;
-            --separator: rgba(60, 60, 67, 0.15);
+            --accent: #f57c03;
+            --fg: #37352f;
+            --fg-soft: rgba(55, 53, 47, 0.6);
+            --bg-hover: rgba(55, 53, 47, 0.06);
+            --border: rgba(55, 53, 47, 0.13);
         }
         html, body {
             margin: 0;
@@ -18,221 +18,281 @@
             background: transparent;
         }
         body {
-            font-family: -apple-system, "SF Pro Text", sans-serif;
+            font-family: -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
             padding: 8px;
             box-sizing: border-box;
         }
 
-        /* ---- Toolbar (fixed, tiptap simple-editor style) ---- */
-        .tiptap-toolbar {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            padding: 6px 8px;
-            background: var(--toolbar-bg);
-            border: 1px solid var(--toolbar-border);
-            border-radius: 10px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-        }
-        .tiptap-toolbar::-webkit-scrollbar { display: none; }
-        .tiptap-toolbar-group {
-            display: flex;
-            align-items: center;
-            gap: 1px;
-        }
-        .tiptap-separator {
-            width: 1px;
-            height: 20px;
-            background: var(--separator);
-            margin: 0 6px;
-            flex-shrink: 0;
-        }
-        .tiptap-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: 7px;
-            background: transparent;
-            color: var(--button-fg);
-            cursor: pointer;
-            flex-shrink: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .tiptap-button svg {
-            width: 18px;
-            height: 18px;
-        }
-        .tiptap-button:active { opacity: 0.5; }
-        .tiptap-button.is-active {
-            background: var(--button-active);
-            color: #fff;
-        }
-        .tiptap-button-dropdown {
-            width: auto;
-            padding: 0 6px;
-            gap: 2px;
-            font-size: 15px;
-            font-weight: 600;
-        }
-        .tiptap-button-dropdown svg { width: 12px; height: 12px; }
-
-        /* ---- Editor content ---- */
+        /* ---- Editor content: Notion-style, centered column ---- */
         .tiptap {
             font-size: 17px;
-            line-height: 1.55;
+            line-height: 1.6;
+            color: var(--fg);
             min-height: 240px;
-            padding: 14px 4px;
+            padding: 12px 4px 12px 34px;
             outline: none;
+            max-width: 780px;
         }
+        .tiptap > * + * { margin-top: 0.35em; }
         .tiptap p.is-editor-empty:first-child::before {
             content: attr(data-placeholder);
-            color: rgba(60, 60, 67, 0.35);
+            color: var(--fg-soft);
             float: left;
             height: 0;
             pointer-events: none;
         }
-        .tiptap h1 { font-size: 28px; }
-        .tiptap h2 { font-size: 24px; }
-        .tiptap h3 { font-size: 20px; }
-        .tiptap h4 { font-size: 18px; }
-        .tiptap img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
+        .tiptap h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; margin: 0.7em 0 0.3em; }
+        .tiptap h2 { font-size: 24px; font-weight: 600; margin: 0.7em 0 0.3em; }
+        .tiptap h3 { font-size: 20px; font-weight: 600; margin: 0.7em 0 0.3em; }
+        .tiptap h4 { font-size: 17px; font-weight: 600; margin: 0.7em 0 0.3em; }
+        .tiptap ul, .tiptap ol { padding-left: 1.5em; }
+        .tiptap ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+        .tiptap ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 8px; }
+        .tiptap ul[data-type="taskList"] li > label { flex-shrink: 0; margin-top: 3px; }
+        .tiptap ul[data-type="taskList"] li > div { flex: 1; }
+        .tiptap ul[data-type="taskList"] input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: var(--accent);
         }
-        .tiptap img.ProseMirror-selectednode {
-            outline: 3px solid rgba(255, 125, 3, 0.5);
+        .tiptap ul[data-type="taskList"] li[data-checked="true"] > div {
+            text-decoration: line-through; color: var(--fg-soft);
         }
+        .tiptap img { max-width: 100%; height: auto; border-radius: 4px; }
+        .tiptap img.ProseMirror-selectednode { outline: 2px solid var(--accent); }
         .tiptap blockquote {
-            border-left: 3px solid rgba(60, 60, 67, 0.3);
-            margin-left: 0;
-            padding-left: 12px;
-            color: rgba(60, 60, 67, 0.8);
+            border-left: 3px solid var(--border);
+            margin-left: 0; padding-left: 14px;
+            color: var(--fg-soft);
         }
-        .tiptap a { color: #f57c03; }
-        .tiptap hr {
-            border: none;
-            border-top: 1px solid rgba(60, 60, 67, 0.2);
-            margin: 16px 0;
-        }
+        .tiptap a { color: var(--accent); text-decoration: underline; }
+        .tiptap hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
         .tiptap pre {
-            background: rgba(60, 60, 67, 0.07);
-            border-radius: 8px;
-            padding: 10px;
+            background: var(--bg-hover);
+            border-radius: 4px;
+            padding: 12px 14px;
             font-family: ui-monospace, SFMono-Regular, monospace;
             font-size: 14px;
         }
         .tiptap code {
-            background: rgba(60, 60, 67, 0.1);
+            background: var(--bg-hover);
             border-radius: 4px;
             padding: 1px 4px;
             font-family: ui-monospace, SFMono-Regular, monospace;
         }
         .tiptap pre code { background: none; padding: 0; }
-        .tiptap mark {
-            background: #ffe58f;
-            border-radius: 2px;
-            padding: 0 2px;
+        .tiptap mark { background: #ffe58f; border-radius: 2px; padding: 0 2px; }
+        .tiptap .math { font-family: "STIX Two Math", "Cambria Math", serif; }
+
+        /* ---- Drag handles ---- */
+        .tiptap > * { position: relative; }
+        .drag-handle {
+            position: absolute;
+            left: -28px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: transparent;
+            color: var(--fg-soft);
+            border-radius: 4px;
+            opacity: 0;
+            -webkit-tap-highlight-color: transparent;
+            cursor: grab;
+            padding: 0;
         }
+        .drag-handle:hover, .drag-handle.dragging { opacity: 1; background: var(--bg-hover); }
+        .tiptap:focus-within .drag-handle { opacity: 1; }
+
+        /* ---- Slash command menu: floating at cursor ---- */
+        .slash-menu {
+            position: fixed;
+            z-index: 300;
+            width: 320px;
+            max-height: 320px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08);
+            padding: 6px;
+            display: none;
+        }
+        .slash-menu.is-open { display: block; }
+        .slash-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--fg-soft);
+            padding: 4px 8px;
+        }
+        .slash-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 6px 8px;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            text-align: left;
+        }
+        .slash-item:active { background: var(--bg-hover); }
+        .slash-item.is-active { background: var(--bg-hover); }
+        .slash-icon {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-hover);
+            border-radius: 4px;
+            flex-shrink: 0;
+            color: var(--fg);
+        }
+        .slash-icon svg { width: 16px; height: 16px; }
+        .slash-label { font-size: 14px; font-weight: 500; color: var(--fg); flex: 1; }
+        .slash-hint { font-size: 12px; color: var(--fg-soft); }
+        .slash-empty { padding: 10px 8px; font-size: 14px; color: var(--fg-soft); }
+
+        /* ---- Add block (+) button ---- */
+        .add-block-btn {
+            position: fixed;
+            z-index: 200;
+            width: 24px;
+            height: 24px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            color: var(--fg-soft);
+            -webkit-tap-highlight-color: transparent;
+            padding: 0;
+        }
+        .add-block-btn:active { background: var(--bg-hover); }
+
+        /* ---- Context menus (bubble / floating) ---- */
+        .context-menu {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            padding: 4px;
+            background: #191919;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .context-menu button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            color: #f2f2f7;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .context-menu button svg { width: 15px; height: 15px; }
+        .context-menu button:active { opacity: 0.5; }
+        .context-menu button.is-active { background: #f57c03; color: #fff; }
+        .context-menu .csep { width: 1px; height: 16px; background: rgba(255,255,255,0.2); margin: 0 4px; }
+        .bubble-menu, .floating-menu { display: none; }
+        .bubble-menu[data-show], .floating-menu[data-show] { display: flex; }
+
+        /* ---- Emoji menu ---- */
+        .emoji-menu {
+            position: fixed;
+            z-index: 400;
+            width: 240px;
+            max-height: 260px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+            padding: 6px;
+            display: none;
+        }
+        .emoji-menu.is-open { display: block; }
     </style>
 </head>
 <body>
-    <div class="tiptap-toolbar" role="toolbar" aria-label="toolbar">
-        <div class="tiptap-toolbar-group">
-            <button class="tiptap-button" data-cmd="undo" aria-label="Undo" title="Undo">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="redo" aria-label="Redo" title="Redo">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg>
-            </button>
-        </div>
-        <div class="tiptap-separator"></div>
-        <div class="tiptap-toolbar-group">
-            <button class="tiptap-button tiptap-button-dropdown" data-cmd="heading" data-level="1" title="Heading 1">H<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
-            <button class="tiptap-button tiptap-button-dropdown" data-cmd="heading" data-level="2" title="Heading 2">H<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
-            <button class="tiptap-button tiptap-button-dropdown" data-cmd="heading" data-level="3" title="Heading 3">H<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
-            <button class="tiptap-button" data-cmd="bulletList" aria-label="List options" title="Bullet list">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="orderedList" aria-label="Ordered list" title="Numbered list">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="blockquote" aria-label="Blockquote" title="Quote">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.17 6c-2.4 0-4.17 1.8-4.17 4.2 0 2.3 1.8 4.2 4.17 4.2l-1.2 2.5c-.13.27-.05.6.18.77.24.18.57.16.79-.04L10.3 13c1.1-1.5 1.5-3.6.7-5.2C10.3 6.2 8.9 6 7.17 6Zm9.66 0c-2.4 0-4.17 1.8-4.17 4.2 0 2.3 1.8 4.2 4.17 4.2l-1.2 2.5c-.13.27-.05.6.18.77.24.18.57.16.79-.04L19.96 13c1.1-1.5 1.5-3.6.7-5.2C19.96 6.2 18.56 6 16.83 6Z"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="codeBlock" aria-label="Code Block" title="Code block">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg>
-            </button>
-        </div>
-        <div class="tiptap-separator"></div>
-        <div class="tiptap-toolbar-group">
-            <button class="tiptap-button" data-cmd="bold" aria-label="Bold" title="Bold">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h8a4 4 0 0 1 0 8H6zM6 12h9a4 4 0 0 1 0 8H6z"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="italic" aria-label="Italic" title="Italic">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 4h-9M14 20H5M15 4 9 20"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="strike" aria-label="Strike" title="Strikethrough">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4H9a3 3 0 0 0-2.8 4M14 12a4 4 0 0 1 0 8H6M4 12h16"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="code" aria-label="Code" title="Inline code">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="underline" aria-label="Underline" title="Underline">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="highlight" aria-label="Highlight" title="Highlight">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h9l3-3M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="link" aria-label="Link" title="Link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
-            </button>
-        </div>
-        <div class="tiptap-separator"></div>
-        <div class="tiptap-toolbar-group">
-            <button class="tiptap-button" data-cmd="superscript" aria-label="Superscript" title="Superscript">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 19 8-8m0 8L4 11M20 4h-4c0 1.5 1.5 2 3 3.5S19 11 21 9.5c1 .8 2 .8 3 0M22 4l1 0"/><path d="m17 6 1 0M19 4h2"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="subscript" aria-label="Subscript" title="Subscript">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 19 8-8m0 8L4 11M20 4h-4c0 1.5 1.5 2 3 3.5S19 11 21 9.5c1 .8 2 .8 3 0"/></svg>
-            </button>
-        </div>
-        <div class="tiptap-separator"></div>
-        <div class="tiptap-toolbar-group">
-            <button class="tiptap-button" data-cmd="alignLeft" aria-label="Align left" title="Align left">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 10h12M3 14h18M3 18h12"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="alignCenter" aria-label="Align center" title="Align center">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 10h12M3 14h18M6 18h12"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="alignRight" aria-label="Align right" title="Align right">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M9 10h12M3 14h18M9 18h12"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="alignJustify" aria-label="Align justify" title="Justify">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 10h18M3 14h18M3 18h18"/></svg>
-            </button>
-        </div>
-        <div class="tiptap-separator"></div>
-        <div class="tiptap-toolbar-group">
-            <button class="tiptap-button" data-cmd="image" aria-label="Add image" title="Add image">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18v14H3z"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-            </button>
-            <button class="tiptap-button" data-cmd="hr" aria-label="Horizontal rule" title="Divider">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/></svg>
-            </button>
-        </div>
+    <div class="context-menu bubble-menu" id="bubble-menu">
+        <button data-bcmd="bold" title="Bold">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4h8a4 4 0 0 1 0 8H6zM6 12h9a4 4 0 0 1 0 8H6z"/></svg>
+        </button>
+        <button data-bcmd="italic" title="Italic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 4h-9M14 20H5M15 4 9 20"/></svg>
+        </button>
+        <button data-bcmd="underline" title="Underline">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16"/></svg>
+        </button>
+        <button data-bcmd="strike" title="Strikethrough">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4H9a3 3 0 0 0-2.8 4M14 12a4 4 0 0 1 0 8H6M4 12h16"/></svg>
+        </button>
+        <button data-bcmd="code" title="Inline code">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg>
+        </button>
+        <button data-bcmd="highlight" title="Highlight">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 11-6 6v3h9l3-3M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+        </button>
+        <span class="csep"></span>
+        <button data-bcmd="heading" data-level="2" title="Heading">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4v16M18 4v16M6 12h12"/></svg>
+        </button>
+        <button data-bcmd="bulletList" title="Bulleted list">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        </button>
+        <button data-bcmd="orderedList" title="Numbered list">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+        </button>
+        <button data-bcmd="blockquote" title="Quote">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.17 6c-2.4 0-4.17 1.8-4.17 4.2 0 2.3 1.8 4.2 4.17 4.2l-1.2 2.5c-.13.27-.05.6.18.77.24.18.57.16.79-.04L10.3 13c1.1-1.5 1.5-3.6.7-5.2C10.3 6.2 8.9 6 7.17 6Zm9.66 0c-2.4 0-4.17 1.8-4.17 4.2 0 2.3 1.8 4.2 4.17 4.2l-1.2 2.5c-.13.27-.05.6.18.77.24.18.57.16.79-.04L19.96 13c1.1-1.5 1.5-3.6.7-5.2C19.96 6.2 18.56 6 16.83 6Z"/></svg>
+        </button>
+        <button data-bcmd="link" title="Link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+        </button>
+    </div>
+
+    <div class="context-menu floating-menu" id="floating-menu">
+        <button data-bcmd="heading" data-level="1" title="Heading 1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4v16M18 4v16M6 12h12"/></svg>
+        </button>
+        <button data-bcmd="heading" data-level="2" title="Heading 2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4v16M18 4v16M6 12h12"/></svg>
+        </button>
+        <button data-bcmd="heading" data-level="3" title="Heading 3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4v16M18 4v16M6 12h12"/></svg>
+        </button>
+        <button data-bcmd="bulletList" title="Bulleted list">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        </button>
+        <button data-bcmd="orderedList" title="Numbered list">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+        </button>
+        <button data-bcmd="taskList" title="To-do list">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+        </button>
+        <button data-bcmd="blockquote" title="Quote">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.17 6c-2.4 0-4.17 1.8-4.17 4.2 0 2.3 1.8 4.2 4.17 4.2l-1.2 2.5c-.13.27-.05.6.18.77.24.18.57.16.79-.04L10.3 13c1.1-1.5 1.5-3.6.7-5.2C10.3 6.2 8.9 6 7.17 6Zm9.66 0c-2.4 0-4.17 1.8-4.17 4.2 0 2.3 1.8 4.2 4.17 4.2l-1.2 2.5c-.13.27-.05.6.18.77.24.18.57.16.79-.04L19.96 13c1.1-1.5 1.5-3.6.7-5.2C19.96 6.2 18.56 6 16.83 6Z"/></svg>
+        </button>
+        <button data-bcmd="image" title="Add image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 5h18v14H3z"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        </button>
     </div>
 
     <div id="editor"></div>
+
+    <div class="slash-menu" id="slash-menu"></div>
 
     <script src="tiptap.js"></script>
     <script>
@@ -240,40 +300,6 @@
             try { window.webkit.messageHandlers.editorError.postMessage(msg + ' @' + line); } catch (e) {}
             return false;
         };
-
-        var currentState = {};
-
-        function applyState(state) {
-            currentState = state || {};
-            document.querySelectorAll('.tiptap-button[data-cmd]').forEach(function (btn) {
-                var cmd = btn.getAttribute('data-cmd');
-                var active = false;
-                switch (cmd) {
-                    case 'bold': active = !!state.bold; break;
-                    case 'italic': active = !!state.italic; break;
-                    case 'underline': active = !!state.underline; break;
-                    case 'strike': active = !!state.strike; break;
-                    case 'code': active = !!state.code; break;
-                    case 'highlight': active = !!state.highlight; break;
-                    case 'superscript': active = !!state.superscript; break;
-                    case 'subscript': active = !!state.subscript; break;
-                    case 'bulletList': active = !!state.bulletList; break;
-                    case 'orderedList': active = !!state.orderedList; break;
-                    case 'blockquote': active = !!state.blockquote; break;
-                    case 'codeBlock': active = !!state.codeBlock; break;
-                    case 'alignLeft': active = !!state.alignLeft; break;
-                    case 'alignCenter': active = !!state.alignCenter; break;
-                    case 'alignRight': active = !!state.alignRight; break;
-                    case 'alignJustify': active = !!state.alignJustify; break;
-                    case 'link': active = !!state.hasLink; break;
-                    case 'heading':
-                        active = state.heading && btn.getAttribute('data-level') == state.heading;
-                        break;
-                    default: break;
-                }
-                btn.classList.toggle('is-active', active);
-            });
-        }
 
         function boot() {
             if (typeof BloggerTipTap === 'undefined') {
@@ -288,25 +314,52 @@
             boot();
         }
 
-        // Toolbar tap handling -> bridge commands.
-        document.querySelector('.tiptap-toolbar').addEventListener('click', function (e) {
-            var btn = e.target.closest('.tiptap-button');
-            if (!btn) return;
-            var cmd = btn.getAttribute('data-cmd');
-            switch (cmd) {
-                case 'image':
-                    window.webkit.messageHandlers.insertImageRequested.postMessage('image');
-                    return;
-                case 'link':
-                    window.webkit.messageHandlers.insertLinkRequested.postMessage('link');
-                    return;
-                case 'heading':
-                    BloggerTipTap.heading(parseInt(btn.getAttribute('data-level'), 10));
-                    return;
-                default:
-                    if (cmd && BloggerTipTap[cmd]) BloggerTipTap[cmd]();
-            }
+        // Bubble / floating context menus.
+        ['bubble-menu', 'floating-menu'].forEach(function (id) {
+            document.getElementById(id).addEventListener('click', function (e) {
+                var btn = e.target.closest('button[data-bcmd]');
+                if (!btn) return;
+                var cmd = btn.getAttribute('data-bcmd');
+                switch (cmd) {
+                    case 'image':
+                        window.webkit.messageHandlers.insertImageRequested.postMessage('image');
+                        return;
+                    case 'link':
+                        window.webkit.messageHandlers.insertLinkRequested.postMessage('link');
+                        return;
+                    case 'heading':
+                        BloggerTipTap.heading(parseInt(btn.getAttribute('data-level'), 10));
+                        return;
+                    default:
+                        if (cmd && BloggerTipTap[cmd]) BloggerTipTap[cmd]();
+                }
+            });
         });
+
+        function syncContextMenus(state) {
+            document.querySelectorAll('.context-menu button[data-bcmd]').forEach(function (btn) {
+                var cmd = btn.getAttribute('data-bcmd');
+                var active = false;
+                switch (cmd) {
+                    case 'bold': active = !!state.bold; break;
+                    case 'italic': active = !!state.italic; break;
+                    case 'underline': active = !!state.underline; break;
+                    case 'strike': active = !!state.strike; break;
+                    case 'code': active = !!state.code; break;
+                    case 'highlight': active = !!state.highlight; break;
+                    case 'bulletList': active = !!state.bulletList; break;
+                    case 'orderedList': active = !!state.orderedList; break;
+                    case 'taskList': active = !!state.taskList; break;
+                    case 'blockquote': active = !!state.blockquote; break;
+                    case 'heading':
+                        active = state.heading && btn.getAttribute('data-level') == state.heading;
+                        break;
+                    case 'link': active = !!state.hasLink; break;
+                    default: break;
+                }
+                btn.classList.toggle('is-active', active);
+            });
+        }
     </script>
 </body>
 </html>
