@@ -1,57 +1,49 @@
 import SwiftUI
 import UIKit
-import InfomaniakRichHTMLEditor
+import Aztec
 
-/// An Apple Notes–style rich HTML editor: a clean, plain editing surface with
-/// the formatting controls in the keyboard accessory bar (invoked via an "Aa"
-/// button), backed by the Infomaniak editor (renders tables + images natively).
+/// A rich HTML editor backed by Aztec (the editor the WordPress app ships with).
+/// It is a native `UITextView` subclass, so formatting applies directly to the
+/// text (no webview / execCommand focus issues), and it renders images natively.
+/// Tables render as an "HTML" block; use the HTML source toggle to edit them.
 struct RichTextEditor: View {
     @Binding var html: String
-    @StateObject private var textAttributes: TextAttributes
+    @StateObject private var editorRef: EditorRef
     @StateObject private var router: EditorRouter
     private let accessoryView: UIView
 
     init(html: Binding<String>) {
         _html = html
-        let textAttributes = TextAttributes()
+        let editorRef = EditorRef()
         let router = EditorRouter()
-        _textAttributes = StateObject(wrappedValue: textAttributes)
+        _editorRef = StateObject(wrappedValue: editorRef)
         _router = StateObject(wrappedValue: router)
 
-        let controller = UIHostingController(
-            rootView: AccessoryToolbar(textAttributes: textAttributes, router: router)
-        )
-        controller.view.backgroundColor = .clear
-        controller.view.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44)
-        accessoryView = controller.view
+        let toolbar = AztecFormattingToolbar(editorRef: editorRef, router: router)
+        toolbar.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44)
+        accessoryView = toolbar
     }
 
     var body: some View {
-        RichHTMLEditor(html: $html, textAttributes: textAttributes)
-            .editorScrollable(true)
-            .editorCSS(editorCSS)
-            .editorInputAccessoryView(accessoryView)
+        AztecTextView(html: $html, editorRef: editorRef, accessoryView: accessoryView)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear { editorRef.onHTMLChange = { html = $0 } }
             .sheet(isPresented: $router.showLinkSheet) {
-                LinkInputView(textAttributes: textAttributes)
+                LinkInputView(editorRef: editorRef, router: router)
             }
     }
+}
 
-    private var editorCSS: String {
-        """
-        :root {
-            --paragraph-spacing: 1em;
-            --sl-color-border: #CCC;
-            --sl-color-hairline: #DDD;
-            --sl-text-sm: 14px;
-            --sl-text-code-sm: 14px;
-        }
-        #swift-rich-html-editor { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 17px; line-height: 1.5; padding: 8px; }
-        img { max-width: 100%; height: auto; }
-        #swift-rich-html-editor table { display: table !important; border-collapse: collapse; width: 100%; max-width: 100%; }
-        #swift-rich-html-editor table tr { display: table-row !important; }
-        #swift-rich-html-editor table td, #swift-rich-html-editor table th { display: table-cell !important; border: 1px solid #CCC; padding: 6px; }
-        """
+/// Shared, stable reference to the underlying editor so the toolbar can apply
+/// formatting directly and sync the HTML binding.
+final class EditorRef: ObservableObject {
+    weak var view: Aztec.TextView?
+    var onHTMLChange: ((String) -> Void)?
+
+    func apply(_ command: (Aztec.TextView) -> Void) {
+        guard let textView = view else { return }
+        command(textView)
+        onHTMLChange?(textView.getHTML())
     }
 }
 
@@ -60,73 +52,203 @@ final class EditorRouter: ObservableObject {
     @Published var showLinkSheet = false
 }
 
-// MARK: - Apple Notes style accessory toolbar
+// MARK: - Aztec TextView wrapper
 
-private struct AccessoryToolbar: View {
-    @ObservedObject var textAttributes: TextAttributes
-    @ObservedObject var router: EditorRouter
+private struct AztecTextView: UIViewRepresentable {
+    @Binding var html: String
+    var editorRef: EditorRef
+    var accessoryView: UIView
 
-    @State private var expanded = false
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    var body: some View {
-        HStack(spacing: 2) {
-            // Notes-style "Aa" button toggles the formatting panel.
-            Button {
-                withAnimation(.easeInOut(duration: 0.15)) { expanded.toggle() }
-            } label: {
-                Image(systemName: "textformat.size")
-                    .font(.system(size: 17, weight: .medium))
-                    .frame(width: 34, height: 30)
-                    .foregroundStyle(expanded ? Color.accentColor : Color.primary)
-                    .background(expanded ? Color.accentColor.opacity(0.15) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
-            }
-            .buttonStyle(.plain)
+    func makeUIView(context: Context) -> Aztec.TextView {
+        let textView = Aztec.TextView(
+            defaultFont: .preferredFont(forTextStyle: .body),
+            defaultParagraphStyle: .default,
+            defaultMissingImage: UIImage(systemName: "photo")!
+        )
+        textView.isEditable = true
+        textView.isScrollEnabled = false
+        textView.alwaysBounceVertical = false
+        textView.backgroundColor = .clear
+        textView.delegate = context.coordinator
+        textView.textAttachmentDelegate = context.coordinator
+        textView.registerAttachmentImageProvider(DefaultAttachmentImageProvider())
+        textView.inputAccessoryView = accessoryView
+        // Avoid the attachment-layout crash from a zero-width initial frame.
+        textView.frame = CGRect(x: 0, y: 0, width: max(UIScreen.main.bounds.width, 300), height: 400)
 
-            if expanded {
-                toolButton("bold", active: textAttributes.hasBold) { textAttributes.bold() }
-                toolButton("italic", active: textAttributes.hasItalic) { textAttributes.italic() }
-                toolButton("underline", active: textAttributes.hasUnderline) { textAttributes.underline() }
-                toolButton("strikethrough", active: textAttributes.hasStrikethrough) { textAttributes.strikethrough() }
-                divider
-                toolButton("list.bullet", active: textAttributes.hasUnorderedList) { textAttributes.unorderedList() }
-                toolButton("list.number", active: textAttributes.hasOrderedList) { textAttributes.orderedList() }
-                divider
-                toolButton("link", active: textAttributes.hasLink) { router.showLinkSheet = true }
-                divider
-                toolButton("arrow.uturn.backward") { textAttributes.undo() }
-                toolButton("arrow.uturn.forward") { textAttributes.redo() }
-            }
+        editorRef.view = textView
+        context.coordinator.setHTMLIfReady(html, in: textView)
+        return textView
+    }
 
-            Spacer(minLength: 0)
+    func updateUIView(_ uiView: Aztec.TextView, context: Context) {
+        context.coordinator.parent = self
+        uiView.inputAccessoryView = accessoryView
+        context.coordinator.setHTMLIfReady(html, in: uiView)
+    }
+
+    final class Coordinator: NSObject, UITextViewDelegate, TextViewAttachmentDelegate {
+        var parent: AztecTextView
+
+        init(_ parent: AztecTextView) {
+            self.parent = parent
         }
-        .frame(height: 44)
-        .padding(.horizontal, 8)
-    }
 
-    private var divider: some View {
-        Rectangle()
-            .fill(Color(.separator))
-            .frame(width: 1, height: 20)
-            .padding(.horizontal, 4)
-    }
-
-    private func toolButton(_ systemName: String, active: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 15, weight: .medium))
-                .frame(width: 32, height: 30)
-                .foregroundStyle(active ? Color.accentColor : Color.primary)
-                .background(active ? Color.accentColor.opacity(0.15) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
+        func setHTMLIfReady(_ html: String, in textView: Aztec.TextView) {
+            guard textView.bounds.width > 0 else { return }
+            guard textView.getHTML() != html else { return }
+            textView.setHTML(html)
         }
-        .buttonStyle(.plain)
-        .transition(.move(edge: .leading).combined(with: .opacity))
+
+        func textViewDidChange(_ textView: UITextView) {
+            guard let aztec = textView as? Aztec.TextView else { return }
+            let newHTML = aztec.getHTML()
+            if newHTML != parent.html {
+                parent.html = newHTML
+            }
+        }
+
+        // MARK: - TextViewAttachmentDelegate (remote image loading)
+
+        func textView(
+            _ textView: TextView,
+            attachment: NSTextAttachment,
+            imageAt url: URL,
+            onSuccess success: @escaping (UIImage) -> Void,
+            onFailure failure: @escaping () -> Void
+        ) {
+            URLSession.shared.dataTask(with: url) { data, _, error in
+                guard error == nil, let data, let image = UIImage(data: data) else {
+                    DispatchQueue.main.async { failure() }
+                    return
+                }
+                DispatchQueue.main.async { success(image) }
+            }.resume()
+        }
+
+        func textView(_ textView: TextView, urlFor imageAttachment: ImageAttachment) -> URL? {
+            imageAttachment.url
+        }
+
+        func textView(_ textView: TextView, placeholderFor attachment: NSTextAttachment) -> UIImage {
+            UIImage(systemName: "photo") ?? UIImage()
+        }
+
+        func textView(_ textView: TextView, deletedAttachment attachment: MediaAttachment) {}
+        func textView(_ textView: TextView, selected attachment: NSTextAttachment, atPosition position: CGPoint) {}
+        func textView(_ textView: TextView, deselected attachment: NSTextAttachment, atPosition position: CGPoint) {}
     }
+}
+
+/// Supplies a valid size and placeholder image for Aztec attachments, which
+/// Aztec requires or it crashes / hits a fatalError.
+private final class DefaultAttachmentImageProvider: TextViewAttachmentImageProvider {
+    func textView(_ textView: TextView, shouldRender attachment: NSTextAttachment) -> Bool {
+        !(attachment is MediaAttachment)
+    }
+
+    func textView(_ textView: TextView, boundsFor attachment: NSTextAttachment, with lineFragment: CGRect) -> CGRect {
+        CGRect(x: 0, y: 0, width: max(lineFragment.width, 1), height: 220)
+    }
+
+    func textView(_ textView: TextView, imageFor attachment: NSTextAttachment, with size: CGSize) -> UIImage? {
+        UIImage(systemName: "photo")
+    }
+}
+
+// MARK: - Formatting toolbar
+
+private final class AztecFormattingToolbar: UIView {
+    private let scrollView = UIScrollView()
+    private let stackView = UIStackView()
+    private let editorRef: EditorRef
+    private let router: EditorRouter
+
+    init(editorRef: EditorRef, router: EditorRouter) {
+        self.editorRef = editorRef
+        self.router = router
+        super.init(frame: .zero)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func setup() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.isDirectionalLockEnabled = true
+        addSubview(scrollView)
+
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .horizontal
+        stackView.spacing = 8
+        stackView.alignment = .center
+        stackView.layoutMargins = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
+        stackView.isLayoutMarginsRelativeArrangement = true
+        scrollView.addSubview(stackView)
+
+        NSLayoutConstraint.activate([
+            scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            stackView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            stackView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            scrollView.frameLayoutGuide.heightAnchor.constraint(equalTo: stackView.heightAnchor)
+        ])
+
+        addButton("arrow.uturn.backward", #selector(undoTapped))
+        addButton("arrow.uturn.forward", #selector(redoTapped))
+        addButton("bold", #selector(boldTapped))
+        addButton("italic", #selector(italicTapped))
+        addButton("underline", #selector(underlineTapped))
+        addButton("strikethrough", #selector(strikeTapped))
+        addButton("list.bullet", #selector(bulletTapped))
+        addButton("list.number", #selector(numberTapped))
+        addButton("textformat.header", #selector(headerTapped))
+        addButton("quote.opening", #selector(quoteTapped))
+        addButton("link", #selector(linkTapped))
+    }
+
+    private func addButton(_ symbol: String, _ action: Selector) {
+        let button = UIButton(configuration: .borderless())
+        button.setImage(UIImage(systemName: symbol), for: .normal)
+        button.tintColor = .tintColor
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.addTarget(self, action: action, for: .touchUpInside)
+        button.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 40).isActive = true
+        stackView.addArrangedSubview(button)
+    }
+
+    private var selectedRange: NSRange {
+        editorRef.view?.selectedRange ?? NSRange(location: 0, length: 0)
+    }
+
+    @objc private func undoTapped() { editorRef.view?.undoManager?.undo() }
+    @objc private func redoTapped() { editorRef.view?.undoManager?.redo() }
+    @objc private func boldTapped() { editorRef.apply { $0.toggleBold(range: self.selectedRange) } }
+    @objc private func italicTapped() { editorRef.apply { $0.toggleItalic(range: self.selectedRange) } }
+    @objc private func underlineTapped() { editorRef.apply { $0.toggleUnderline(range: self.selectedRange) } }
+    @objc private func strikeTapped() { editorRef.apply { $0.toggleStrikethrough(range: self.selectedRange) } }
+    @objc private func bulletTapped() { editorRef.apply { $0.toggleUnorderedList(range: self.selectedRange) } }
+    @objc private func numberTapped() { editorRef.apply { $0.toggleOrderedList(range: self.selectedRange) } }
+    @objc private func headerTapped() { editorRef.apply { $0.toggleHeader(.h1, range: self.selectedRange) } }
+    @objc private func quoteTapped() { editorRef.apply { $0.toggleBlockquote(range: self.selectedRange) } }
+    @objc private func linkTapped() { router.showLinkSheet = true }
 }
 
 // MARK: - Link input
 
 private struct LinkInputView: View {
-    @ObservedObject var textAttributes: TextAttributes
+    let editorRef: EditorRef
+    let router: EditorRouter
     @Environment(\.dismiss) private var dismiss
 
     @State private var text = ""
@@ -152,8 +274,8 @@ private struct LinkInputView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") {
                         if let linkURL = URL(string: url) {
-                            let label = text.isEmpty ? nil : text
-                            textAttributes.addLink(url: linkURL, text: label)
+                            editorRef.view?.setLink(linkURL, title: text.isEmpty ? url : text, inRange: editorRef.view?.selectedRange ?? NSRange())
+                            editorRef.onHTMLChange?(editorRef.view?.getHTML() ?? "")
                         }
                         dismiss()
                     }

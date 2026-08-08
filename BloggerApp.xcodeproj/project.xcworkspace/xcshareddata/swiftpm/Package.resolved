@@ -1,5 +1,5 @@
 {
-  "originHash" : "e5d0830f5c2bd766a13dbf3ede650fbade4bf8512360ea3d0e63655e18df3d55",
+  "originHash" : "64bb9ab0af65feccd2bcb61457f9106ca8821ea0fee4def93ca6a0bf5c2396e8",
   "pins" : [
     {
       "identity" : "appauth-ios",
@@ -53,6 +53,15 @@
       "state" : {
         "revision" : "d4e8bd9b1bf62bd2a7ad81ce4e94170b2d6f7ab7",
         "version" : "1.4.1"
+      }
+    },
+    {
+      "identity" : "swiftsoup",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/scinfu/SwiftSoup",
+      "state" : {
+        "revision" : "8d6ad267714cac3ae747cefdd21f7a6665006e1f",
+        "version" : "2.13.7"
       }
     }
   ],

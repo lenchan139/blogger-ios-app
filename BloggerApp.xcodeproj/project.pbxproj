@@ -10,7 +10,23 @@
 		BF9023FF3025ED5A0041AF7D /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = AA000000000000000000000A /* GoogleSignIn */; };
 		BF9026EA302626090041AF7D /* Aztec in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000022 /* Aztec */; };
 		BF9026EB302626090041AF7D /* InfomaniakRichHTMLEditor in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000032 /* InfomaniakRichHTMLEditor */; };
+		BF9026EC302626090041AF7D /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000042 /* SwiftSoup */; };
+		BF9026ED302626090041AF7D /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000042 /* SwiftSoup */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AA0000000000000000000048 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA000000000000000000000B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000006;
+			remoteInfo = BloggerApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		AA0000000000000000000040 /* BloggerAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BloggerAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		AA000000000000000000000F1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
@@ -24,6 +40,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		AA0000000000000000000001 /* BloggerApp */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000000000000000000000F1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = BloggerApp; sourceTree = "<group>"; };
+		AA0000000000000000000043 /* BloggerAppTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = BloggerAppTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -34,6 +51,15 @@
 				BF9026EB302626090041AF7D /* InfomaniakRichHTMLEditor in Frameworks */,
 				BF9026EA302626090041AF7D /* Aztec in Frameworks */,
 				BF9023FF3025ED5A0041AF7D /* GoogleSignIn in Frameworks */,
+				BF9026EC302626090041AF7D /* SwiftSoup in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000046 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BF9026ED302626090041AF7D /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -44,6 +70,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000001 /* BloggerApp */,
+				AA0000000000000000000043 /* BloggerAppTests */,
 				AA0000000000000000000004 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -51,6 +78,7 @@
 		AA0000000000000000000004 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				AA0000000000000000000040 /* BloggerAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -82,6 +110,30 @@
 			productName = BloggerApp;
 			productType = "com.apple.product-type.application";
 		};
+		AA0000000000000000000044 /* BloggerAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA000000000000000000004C /* Build configuration list for PBXNativeTarget "BloggerAppTests" */;
+			buildPhases = (
+				AA0000000000000000000045 /* Sources */,
+				AA0000000000000000000046 /* Frameworks */,
+				AA0000000000000000000047 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA0000000000000000000049 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA0000000000000000000043 /* BloggerAppTests */,
+			);
+			name = BloggerAppTests;
+			packageProductDependencies = (
+				AA0000000000000000000042 /* SwiftSoup */,
+			);
+			productName = BloggerAppTests;
+			productReference = AA0000000000000000000040 /* BloggerAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -111,18 +163,27 @@
 				AA000000000000000000000D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				AA0000000000000000000021 /* XCRemoteSwiftPackageReference "AztecEditor-iOS" */,
 				AA0000000000000000000031 /* XCRemoteSwiftPackageReference "swift-rich-html-editor" */,
+				AA0000000000000000000041 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
 			);
 			productRefGroup = AA0000000000000000000004 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				AA0000000000000000000006 /* BloggerApp */,
+				AA0000000000000000000044 /* BloggerAppTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		AA0000000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000047 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -139,7 +200,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000045 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AA0000000000000000000049 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000000000000000000006 /* BloggerApp */;
+			targetProxy = AA0000000000000000000048 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		AA000000000000000000000E /* Debug */ = {
@@ -317,6 +393,44 @@
 			};
 			name = Release;
 		};
+		AA000000000000000000004A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9S282N7ZLS;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "studio.evol.blogger-appTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BloggerApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BloggerApp";
+			};
+			name = Debug;
+		};
+		AA000000000000000000004B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9S282N7ZLS;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "studio.evol.blogger-appTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BloggerApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BloggerApp";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -334,6 +448,15 @@
 			buildConfigurations = (
 				AA000000000000000000000E /* Debug */,
 				AA000000000000000000000F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA000000000000000000004C /* Build configuration list for PBXNativeTarget "BloggerAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA000000000000000000004A /* Debug */,
+				AA000000000000000000004B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -365,6 +488,14 @@
 				minimumVersion = 1.0.0;
 			};
 		};
+		AA0000000000000000000041 /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/scinfu/SwiftSoup";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.13.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -382,6 +513,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AA0000000000000000000031 /* XCRemoteSwiftPackageReference "swift-rich-html-editor" */;
 			productName = InfomaniakRichHTMLEditor;
+		};
+		AA0000000000000000000042 /* SwiftSoup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000041 /* XCRemoteSwiftPackageReference "SwiftSoup" */;
+			productName = SwiftSoup;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

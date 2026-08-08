@@ -43,43 +43,44 @@ struct PostEditorView: View {
     private var hasLocalChanges: Bool { restoredFromDraft }
 
     var body: some View {
-        VStack(spacing: 0) {
-            TextField("Post title", text: $title, axis: .vertical)
-                .font(.title2.bold())
-                .padding(.horizontal)
-                .padding(.vertical, 12)
-
-            Divider()
-
-            if showingSource {
-                TextEditor(text: $htmlBody)
-                    .font(.system(.body, design: .monospaced))
-                    .overlay(alignment: .topLeading) {
-                        if htmlBody.isEmpty {
-                            Text("HTML source")
-                                .foregroundStyle(.secondary)
-                                .allowsHitTesting(false)
-                                .padding(.top, 8)
-                                .padding(.leading, 5)
-                        }
-                    }
-                    .padding(6)
-                    .background(Color(.secondarySystemBackground))
-            } else {
-                RichTextEditor(html: $htmlBody)
-                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280, maxHeight: .infinity)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                LabelSummaryButton(labels: $labels) {
-                    showingLabelsSheet = true
-                }
-
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
                 if hasLocalChanges {
                     Label("Unsaved local changes", systemImage: "externaldrive.badge.checkmark")
                         .font(.footnote)
                         .foregroundStyle(.orange)
                 }
+
+                TextField("Post title", text: $title, axis: .vertical)
+                    .font(.title2.bold())
+
+                LabelSummaryButton(labels: $labels) {
+                    showingLabelsSheet = true
+                }
+
+                if showingSource {
+                    TextEditor(text: $htmlBody)
+                        .font(.system(.body, design: .monospaced))
+                        .frame(minHeight: 280)
+                        .overlay(alignment: .topLeading) {
+                            if htmlBody.isEmpty {
+                                Text("HTML source")
+                                    .foregroundStyle(.secondary)
+                                    .allowsHitTesting(false)
+                                    .padding(.top, 8)
+                                    .padding(.leading, 5)
+                            }
+                        }
+                        .padding(6)
+                        .background(Color(.secondarySystemBackground))
+                } else if EditorSettings.useBlockEditor {
+                    BlockEditorView(html: $htmlBody)
+                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280)
+                } else {
+                    RichTextEditor(html: $htmlBody)
+                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280)
+                }
+
                 if let errorMessage {
                     Text(errorMessage)
                         .font(.footnote)
@@ -244,8 +245,17 @@ struct PostEditorView: View {
 
     private func insertImage(payload: ImageEditPayload, edit: ImageEditResult) async {
         do {
+            if EditorSettings.useBlockEditor {
+                NotificationCenter.default.post(name: BlockEditorNotifications.imageUploadBegan, object: nil)
+            }
             let url = try await appState.imageUploader.upload(imageData: edit.finalData, contentType: "image/jpeg")
             let caption = edit.caption.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if EditorSettings.useBlockEditor {
+                BlockEditorNotifications.postImageUploadFinished(url: url.absoluteString, caption: caption, alt: payload.captionEscaped)
+                return
+            }
+
             if caption.isEmpty {
                 htmlBody += "\n<img src=\"\(url.absoluteString)\" alt=\"\(payload.captionEscaped ?? "")\"/>\n"
             } else {

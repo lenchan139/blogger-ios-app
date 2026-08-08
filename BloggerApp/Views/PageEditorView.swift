@@ -19,23 +19,26 @@ struct PageEditorView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            TextField("Page title", text: $title, axis: .vertical)
-                .font(.title2.bold())
-                .padding(.horizontal)
-                .padding(.vertical, 12)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                TextField("Page title", text: $title, axis: .vertical)
+                    .font(.title2.bold())
 
-            Divider()
+                if EditorSettings.useBlockEditor {
+                    BlockEditorView(html: $htmlBody)
+                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280)
+                } else {
+                    RichTextEditor(html: $htmlBody)
+                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280)
+                }
 
-            RichTextEditor(html: $htmlBody)
-                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280, maxHeight: .infinity)
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-                    .padding()
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
             }
+            .padding()
         }
         .navigationTitle(existingPage == nil ? "New page" : "Edit page")
         .navigationBarTitleDisplayMode(.inline)
