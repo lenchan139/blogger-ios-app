@@ -8,10 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		BF9023FF3025ED5A0041AF7D /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = AA000000000000000000000A /* GoogleSignIn */; };
-		BF9026EA302626090041AF7D /* Aztec in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000022 /* Aztec */; };
 		BF9026EB302626090041AF7D /* InfomaniakRichHTMLEditor in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000032 /* InfomaniakRichHTMLEditor */; };
 		BF9026EC302626090041AF7D /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000042 /* SwiftSoup */; };
 		BF9026ED302626090041AF7D /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000042 /* SwiftSoup */; };
+		BF9026EE302626090041AF7D /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = AA000000000000000000000A /* GoogleSignIn */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,7 +49,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				BF9026EB302626090041AF7D /* InfomaniakRichHTMLEditor in Frameworks */,
-				BF9026EA302626090041AF7D /* Aztec in Frameworks */,
 				BF9023FF3025ED5A0041AF7D /* GoogleSignIn in Frameworks */,
 				BF9026EC302626090041AF7D /* SwiftSoup in Frameworks */,
 			);
@@ -60,6 +59,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BF9026ED302626090041AF7D /* SwiftSoup in Frameworks */,
+				BF9026EE302626090041AF7D /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -104,7 +104,6 @@
 			name = BloggerApp;
 			packageProductDependencies = (
 				AA000000000000000000000A /* GoogleSignIn */,
-				AA0000000000000000000022 /* Aztec */,
 				AA0000000000000000000032 /* InfomaniakRichHTMLEditor */,
 			);
 			productName = BloggerApp;
@@ -128,6 +127,7 @@
 			);
 			name = BloggerAppTests;
 			packageProductDependencies = (
+				AA000000000000000000000A /* GoogleSignIn */,
 				AA0000000000000000000042 /* SwiftSoup */,
 			);
 			productName = BloggerAppTests;
@@ -161,7 +161,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				AA000000000000000000000D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
-				AA0000000000000000000021 /* XCRemoteSwiftPackageReference "AztecEditor-iOS" */,
 				AA0000000000000000000031 /* XCRemoteSwiftPackageReference "swift-rich-html-editor" */,
 				AA0000000000000000000041 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
 			);
@@ -408,7 +407,8 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BloggerApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BloggerApp";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BloggerApp.app/BloggerApp";
+				TEST_TARGET_NAME = BloggerApp;
 			};
 			name = Debug;
 		};
@@ -427,7 +427,8 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BloggerApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BloggerApp";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BloggerApp.app/BloggerApp";
+				TEST_TARGET_NAME = BloggerApp;
 			};
 			name = Release;
 		};
@@ -472,14 +473,6 @@
 				minimumVersion = 7.0.0;
 			};
 		};
-		AA0000000000000000000021 /* XCRemoteSwiftPackageReference "AztecEditor-iOS" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/wordpress-mobile/AztecEditor-iOS";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.20.0;
-			};
-		};
 		AA0000000000000000000031 /* XCRemoteSwiftPackageReference "swift-rich-html-editor" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Infomaniak/swift-rich-html-editor";
@@ -503,11 +496,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AA000000000000000000000D /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
-		};
-		AA0000000000000000000022 /* Aztec */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AA0000000000000000000021 /* XCRemoteSwiftPackageReference "AztecEditor-iOS" */;
-			productName = Aztec;
 		};
 		AA0000000000000000000032 /* InfomaniakRichHTMLEditor */ = {
 			isa = XCSwiftPackageProductDependency;

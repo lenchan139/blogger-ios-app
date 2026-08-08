@@ -24,13 +24,8 @@ struct PageEditorView: View {
                 TextField("Page title", text: $title, axis: .vertical)
                     .font(.title2.bold())
 
-                if EditorSettings.useBlockEditor {
-                    BlockEditorView(html: $htmlBody)
-                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280)
-                } else {
-                    RichTextEditor(html: $htmlBody)
-                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280)
-                }
+                BlockEditorView(html: $htmlBody)
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280)
 
                 if let errorMessage {
                     Text(errorMessage)

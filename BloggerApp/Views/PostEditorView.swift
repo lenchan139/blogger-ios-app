@@ -73,11 +73,8 @@ struct PostEditorView: View {
                         }
                         .padding(6)
                         .background(Color(.secondarySystemBackground))
-                } else if EditorSettings.useBlockEditor {
-                    BlockEditorView(html: $htmlBody)
-                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280)
                 } else {
-                    RichTextEditor(html: $htmlBody)
+                    BlockEditorView(html: $htmlBody)
                         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280)
                 }
 
@@ -245,23 +242,10 @@ struct PostEditorView: View {
 
     private func insertImage(payload: ImageEditPayload, edit: ImageEditResult) async {
         do {
-            if EditorSettings.useBlockEditor {
-                NotificationCenter.default.post(name: BlockEditorNotifications.imageUploadBegan, object: nil)
-            }
+            NotificationCenter.default.post(name: BlockEditorNotifications.imageUploadBegan, object: nil)
             let url = try await appState.imageUploader.upload(imageData: edit.finalData, contentType: "image/jpeg")
             let caption = edit.caption.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            if EditorSettings.useBlockEditor {
-                BlockEditorNotifications.postImageUploadFinished(url: url.absoluteString, caption: caption, alt: payload.captionEscaped)
-                return
-            }
-
-            if caption.isEmpty {
-                htmlBody += "\n<img src=\"\(url.absoluteString)\" alt=\"\(payload.captionEscaped ?? "")\"/>\n"
-            } else {
-                htmlBody += "\n<figure><img src=\"\(url.absoluteString)\" alt=\"\(caption.htmlEscaped)\"/>"
-                htmlBody += "<figcaption>\(caption.htmlEscaped)</figcaption></figure>\n"
-            }
+            BlockEditorNotifications.postImageUploadFinished(url: url.absoluteString, caption: caption, alt: payload.captionEscaped)
         } catch {
             errorMessage = "Image upload failed: \(error.localizedDescription)"
         }

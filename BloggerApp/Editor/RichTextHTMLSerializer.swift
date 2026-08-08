@@ -45,15 +45,10 @@ enum RichTextHTMLSerializer {
 
     // MARK: - NSAttributedString -> HTML
 
-    static func html(from attributed: NSAttributedString) -> NSAttributedString {
-        attributed
-    }
-
     static func htmlString(from attributed: NSAttributedString) -> String {
         guard attributed.length > 0 else { return "" }
 
         var output = ""
-        var i = 0
         let full = NSRange(location: 0, length: attributed.length)
 
         // Track attributes open across runs.
@@ -71,7 +66,6 @@ enum RichTextHTMLSerializer {
 
             let substring = attributed.attributedSubstring(from: range).string
             output += substring.rtHtmlEscaped
-            _ = i
         }
 
         // Close any still-open tags.

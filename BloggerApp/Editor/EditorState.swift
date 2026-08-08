@@ -44,11 +44,10 @@ final class EditorState: ObservableObject {
 
     func move(from source: Int, to destination: Int) {
         guard blocks.indices.contains(source) else { return }
-        var removed = blocks.remove(at: source)
+        let removed = blocks.remove(at: source)
         let insertIndex = destination > source ? destination - 1 : destination
         let clamped = min(max(insertIndex, 0), blocks.count)
         blocks.insert(removed, at: clamped)
-        _ = removed
         emit()
     }
 

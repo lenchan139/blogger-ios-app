@@ -104,6 +104,12 @@ final class BlockHTMLCodecTests: XCTestCase {
 
         XCTAssertEqual(blocks.count, 6)
         XCTAssertEqual(roundTripped.count, blocks.count)
-        XCTAssertEqual(roundTripped, blocks)
+        XCTAssertTrue(contentEqual(blocks, roundTripped), "Round-trip should preserve type/content/attributes")
+    }
+
+    /// Equality ignoring `id` (each decode mints fresh UUIDs).
+    private func contentEqual(_ a: [Block], _ b: [Block]) -> Bool {
+        guard a.count == b.count else { return false }
+        return zip(a, b).allSatisfy { $0.type == $1.type && $0.content == $1.content && $0.attributes == $1.attributes }
     }
 }
