@@ -248,8 +248,8 @@ struct PostEditorView: View {
             let caption = edit.caption.trimmingCharacters(in: .whitespacesAndNewlines)
             richEditorRef.insertImage(url: url.absoluteString, caption: caption)
         } catch {
-            let message = "Image upload failed: \(error.localizedDescription)"
-            print("[ImageUpload] failed: \(error)")
+            let message = "Image upload failed: \(String(describing: error))"
+            print("[ImageUpload] failed: \(String(describing: error))")
             alertMessage = message
         }
     }

@@ -30,8 +30,16 @@ enum Configuration {
     }
 
     /// OAuth scopes requested from the user.
+    ///
+    /// `photoslibrary.readonly.appcreateddata` is needed because the Library
+    /// API now restricts read access (including `mediaItems.get`, used to
+    /// resolve `baseUrl` after upload) to media items *created by this app* —
+    /// the broader `photoslibrary.readonly` scope was removed in March 2025.
+    /// `photoslibrary.appendonly` covers the upload + `mediaItems.batchCreate`
+    /// call.
     static let scopes: [String] = [
         "https://www.googleapis.com/auth/blogger",
-        "https://www.googleapis.com/auth/photoslibrary.appendonly"
+        "https://www.googleapis.com/auth/photoslibrary.appendonly",
+        "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata"
     ]
 }
