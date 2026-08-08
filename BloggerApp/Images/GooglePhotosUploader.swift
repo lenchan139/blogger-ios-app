@@ -32,7 +32,11 @@ struct GooglePhotosUploader: ImageUploading {
 
         let (responseData, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw BloggerError.http(statusCode: (response as? HTTPURLResponse)?.statusCode ?? -1, message: "Photo upload failed")
+            let body = String(data: responseData, encoding: .utf8) ?? ""
+            throw BloggerError.http(
+                statusCode: (response as? HTTPURLResponse)?.statusCode ?? -1,
+                message: "Photo upload failed: \(body.prefix(200))"
+            )
         }
         guard let uploadToken = String(data: responseData, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines), !uploadToken.isEmpty else {
@@ -51,15 +55,22 @@ struct GooglePhotosUploader: ImageUploading {
                 }
             }
         }
+        // `mediaItem` is optional: Google returns item-level errors as a
+        // `status` object without a `mediaItem` key, even on HTTP 200.
         struct Response: Decodable {
             struct MediaItem: Decodable {
                 let baseUrl: String
                 let productUrl: String
             }
-            let newMediaItemResults: [MediaItemResult]?
-            struct MediaItemResult: Decodable {
-                let mediaItem: MediaItem
+            struct ItemStatus: Decodable {
+                let code: Int?
+                let message: String?
             }
+            struct MediaItemResult: Decodable {
+                let mediaItem: MediaItem?
+                let status: ItemStatus?
+            }
+            let newMediaItemResults: [MediaItemResult]?
         }
 
         var request = URLRequest(url: Self.baseURL.appendingPathComponent("mediaItems:batchCreate"))
@@ -72,10 +83,21 @@ struct GooglePhotosUploader: ImageUploading {
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw BloggerError.http(statusCode: (response as? HTTPURLResponse)?.statusCode ?? -1, message: "Photo record creation failed")
         }
-        let decoded = try JSONDecoder().decode(Response.self, from: data)
-        guard let result = decoded.newMediaItemResults?.first?.mediaItem else {
-            throw BloggerError.emptyResponse
+
+        guard let decoded = try? JSONDecoder().decode(Response.self, from: data) else {
+            // Not the expected shape: surface the raw Google error payload.
+            let raw = String(data: data, encoding: .utf8) ?? "empty"
+            throw BloggerError.http(statusCode: http.statusCode, message: "Unexpected response: \(raw.prefix(300))")
         }
-        return URL(string: result.baseUrl)!
+
+        if let first = decoded.newMediaItemResults?.first {
+            if let mediaItem = first.mediaItem {
+                return URL(string: mediaItem.baseUrl)!
+            }
+            if let status = first.status, let message = status.message {
+                throw BloggerError.http(statusCode: status.code ?? -1, message: "Photo record creation failed: \(message)")
+            }
+        }
+        throw BloggerError.emptyResponse
     }
 }

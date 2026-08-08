@@ -213,6 +213,7 @@ struct TipTapWebView: UIViewRepresentable {
                     }
                 }
             case "insertImageRequested":
+                print("[TipTap] image requested from editor")
                 DispatchQueue.main.async { [weak self] in
                     self?.parent.editorRef.onImageRequested?()
                 }

@@ -23,6 +23,7 @@ struct PostEditorView: View {
     @State private var showingPreview = false
     @State private var showingLabelsSheet = false
     @State private var errorMessage: String?
+    @State private var alertMessage: String?
     @State private var restoredFromDraft = false
     @State private var autoSaveTask: Task<Void, Never>?
     @StateObject private var richEditorRef = RichEditorRef()
@@ -160,6 +161,14 @@ struct PostEditorView: View {
                 imageToEdit = nil
             }
         }
+        .alert("Upload failed", isPresented: .init(
+            get: { alertMessage != nil },
+            set: { if !$0 { alertMessage = nil } }
+        )) {
+            Button("OK") { alertMessage = nil }
+        } message: {
+            Text(alertMessage ?? "")
+        }
         .onAppear { loadInitialContent() }
         .onChange(of: title) { _, _ in scheduleAutoSave() }
         .onChange(of: htmlBody) { _, _ in scheduleAutoSave() }
@@ -239,7 +248,9 @@ struct PostEditorView: View {
             let caption = edit.caption.trimmingCharacters(in: .whitespacesAndNewlines)
             richEditorRef.insertImage(url: url.absoluteString, caption: caption)
         } catch {
-            errorMessage = "Image upload failed: \(error.localizedDescription)"
+            let message = "Image upload failed: \(error.localizedDescription)"
+            print("[ImageUpload] failed: \(error)")
+            alertMessage = message
         }
     }
 
