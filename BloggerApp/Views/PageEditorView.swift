@@ -12,7 +12,7 @@ struct PageEditorView: View {
     @State private var htmlBody = ""
     @State private var isSaving = false
     @State private var errorMessage: String?
-    @StateObject private var ckEditorRef = CKEditorRef()
+    @StateObject private var richEditorRef = RichEditorRef()
 
     init(blog: Blog, page: Page?) {
         self.blog = blog
@@ -25,7 +25,7 @@ struct PageEditorView: View {
                 TextField("Page title", text: $title, axis: .vertical)
                     .font(.title2.bold())
 
-                CKEditorView(html: $htmlBody, editorRef: ckEditorRef)
+                RichEditorView(html: $htmlBody, editorRef: richEditorRef)
                     .frame(minWidth: 0, maxWidth: .infinity, minHeight: 320)
 
                 if let errorMessage {

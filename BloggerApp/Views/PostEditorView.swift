@@ -25,9 +25,7 @@ struct PostEditorView: View {
     @State private var errorMessage: String?
     @State private var restoredFromDraft = false
     @State private var autoSaveTask: Task<Void, Never>?
-    @StateObject private var ckEditorRef = CKEditorRef()
-    @State private var showingVideoPrompt = false
-    @State private var videoURL = ""
+    @StateObject private var richEditorRef = RichEditorRef()
 
     init(blog: Blog, post: Post?, draft: LocalDraft? = nil) {
         self.blog = blog
@@ -77,8 +75,10 @@ struct PostEditorView: View {
                         .padding(6)
                         .background(Color(.secondarySystemBackground))
                 } else {
-                    CKEditorView(html: $htmlBody, editorRef: ckEditorRef)
-                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 320)
+                    RichEditorView(html: $htmlBody, editorRef: richEditorRef) {
+                        showingImagePicker = true
+                    }
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 320)
                 }
 
                 if let errorMessage {
@@ -171,22 +171,6 @@ struct PostEditorView: View {
             }
         }
         .onAppear { loadInitialContent() }
-        .onAppear {
-            ckEditorRef.onInsertImageRequested = { showingImagePicker = true }
-            ckEditorRef.onInsertVideoRequested = { showingVideoPrompt = true }
-        }
-        .alert("Insert video", isPresented: $showingVideoPrompt) {
-            TextField("YouTube or MP4 URL", text: $videoURL)
-                .keyboardType(.URL)
-                .autocapitalization(.none)
-                .autocorrectionDisabled()
-            Button("Insert") {
-                let url = videoURL.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !url.isEmpty { ckEditorRef.insertVideo(url: url) }
-                videoURL = ""
-            }
-            Button("Cancel", role: .cancel) { videoURL = "" }
-        }
         .onChange(of: title) { _, _ in scheduleAutoSave() }
         .onChange(of: htmlBody) { _, _ in scheduleAutoSave() }
         .onChange(of: labels) { _, _ in scheduleAutoSave() }
@@ -263,7 +247,7 @@ struct PostEditorView: View {
         do {
             let url = try await appState.imageUploader.upload(imageData: edit.finalData, contentType: "image/jpeg")
             let caption = edit.caption.trimmingCharacters(in: .whitespacesAndNewlines)
-            ckEditorRef.insertImage(url: url.absoluteString, caption: caption, alt: payload.captionEscaped)
+            richEditorRef.insertImage(url: url.absoluteString, caption: caption)
         } catch {
             errorMessage = "Image upload failed: \(error.localizedDescription)"
         }
