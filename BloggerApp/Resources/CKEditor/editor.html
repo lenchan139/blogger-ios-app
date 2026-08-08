@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Blogger Editor</title>
+    <link rel="stylesheet" href="quill.snow.css">
     <style>
         html, body {
             margin: 0;
             padding: 0;
-            height: 100%;
             background: transparent;
         }
         body {
@@ -16,126 +16,141 @@
             padding: 8px;
             box-sizing: border-box;
         }
-        /* Match the app's default text size */
-        .ck.ck-editor__editable_inline {
+        .ql-toolbar {
+            border: 1px solid rgba(60, 60, 67, 0.15) !important;
+            border-radius: 10px;
+            background: rgba(120, 120, 128, 0.07);
+            padding: 6px !important;
+        }
+        .ql-toolbar .ql-formats {
+            margin-right: 4px;
+        }
+        .ql-container {
+            border: none !important;
             font-size: 17px;
-            line-height: 1.5;
-            min-height: 280px;
-            padding: 12px;
-            border: none !important;
-            box-shadow: none !important;
-            background: transparent;
+            line-height: 1.55;
         }
-        .ck.ck-editor__editable_inline > *:first-child {
-            margin-top: 0;
+        .ql-editor {
+            min-height: 260px;
+            padding: 14px 4px;
         }
-        .ck.ck-toolbar {
-            border-radius: 8px;
-            border: 1px solid rgba(60, 60, 67, 0.15) !important;
-            background: rgba(120, 120, 128, 0.08) !important;
+        .ql-editor.ql-blank::before {
+            color: rgba(60, 60, 67, 0.35);
+            font-style: normal;
+            font-size: 17px;
         }
-        .ck.ck-editor__main {
-            border: 1px solid rgba(60, 60, 67, 0.15) !important;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .ck.ck-editor__editable_inline:focus {
-            border: none !important;
-            box-shadow: none !important;
-        }
-        img {
+        .ql-editor img {
             max-width: 100%;
-            height: auto;
+            border-radius: 8px;
+        }
+        .ql-editor p.ql-caption {
+            text-align: center;
+            font-size: 13px;
+            color: rgba(60, 60, 67, 0.6);
+            margin: 4px 0 12px;
+        }
+        .ql-editor iframe {
+            max-width: 100%;
+            border-radius: 8px;
         }
     </style>
 </head>
 <body>
+    <div id="toolbar">
+        <span class="ql-formats">
+            <select class="ql-header">
+                <option value="1">H1</option>
+                <option value="2">H2</option>
+                <option value="3">H3</option>
+                <option selected></option>
+            </select>
+        </span>
+        <span class="ql-formats">
+            <button class="ql-bold"></button>
+            <button class="ql-italic"></button>
+            <button class="ql-underline"></button>
+            <button class="ql-strike"></button>
+        </span>
+        <span class="ql-formats">
+            <select class="ql-color"></select>
+            <select class="ql-background"></select>
+        </span>
+        <span class="ql-formats">
+            <button class="ql-list" value="ordered"></button>
+            <button class="ql-list" value="bullet"></button>
+            <button class="ql-blockquote"></button>
+            <button class="ql-code-block"></button>
+        </span>
+        <span class="ql-formats">
+            <button class="ql-align"></button>
+            <button class="ql-link"></button>
+            <button class="ql-image"></button>
+            <button class="ql-video"></button>
+        </span>
+    </div>
     <div id="editor"></div>
 
-    <script src="ckeditor.js"></script>
+    <script src="quill.js"></script>
     <script>
-        let editor = null;
-        let suppressDataEvents = false;
+        const quill = new Quill('#editor', {
+            theme: 'snow',
+            placeholder: 'Write your post…'
+        });
 
-        ClassicEditor
-            .create(document.querySelector('#editor'), {
-                toolbar: [
-                    'undo', 'redo', '|',
-                    'heading', '|',
-                    'bold', 'italic', 'underline', 'strikethrough', '|',
-                    'bulletedList', 'numberedList', 'blockQuote', '|',
-                    'link', 'insertTable', 'codeBlock', 'horizontalLine', '|',
-                    'removeFormat'
-                ],
-                heading: {
-                    options: [
-                        { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
-                        { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                        { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
-                        { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' },
-                        { model: 'heading4', view: 'h4', title: 'Heading 4', class: 'ck-heading_heading4' }
-                    ]
-                },
-                link: {
-                    addTargetToExternalLinks: true
-                },
-                placeholder: 'Write your post…'
-            })
-            .then(function (createdEditor) {
-                editor = createdEditor;
+        // Custom block format so caption paragraphs keep their class through
+        // Delta round-trips.
+        const Caption = Quill.import('blots/block');
+        Caption.tagName = 'p';
+        Caption.className = 'ql-caption';
+        Caption.allowedChildren = [Quill.import('blots/inline'), Quill.import('blots/block')];
+        Quill.register(Caption, true);
+        const captionFormat = { caption: true };
 
-                // Notify native whenever content changes.
-                editor.model.document.on('change:data', function () {
-                    if (suppressDataEvents) { return; }
-                    window.webkit.messageHandlers.editorContent.postMessage(editor.getData());
-                });
+        const notify = () => {
+            window.webkit.messageHandlers.editorContent.postMessage(quill.getSemanticHTML());
+        };
+        quill.on('text-change', notify);
 
-                // Native -> JS API.
-                window.CKEditorBridge = {
-                    setData: function (html) {
-                        suppressDataEvents = true;
-                        editor.setData(html);
-                        suppressDataEvents = false;
-                    },
-                    getData: function () {
-                        return editor.getData();
-                    },
-                    insertImage: function (url, caption, alt) {
-                        const src = url;
-                        const figure = document.createElement('figure');
-                        figure.innerHTML = '<img src="' + src + '"' + (alt ? ' alt="' + alt + '"' : '') + '/>';
-                        if (caption) {
-                            const figcaption = document.createElement('figcaption');
-                            figcaption.textContent = caption;
-                            figure.appendChild(figcaption);
-                        }
-                        editor.model.change(function (writer) {
-                            const position = editor.model.document.selection.getFirstPosition();
-                            const imageElement = writer.createElement('imageBlock', {
-                                src: src,
-                                alt: alt || ''
-                            });
-                            editor.model.insertContent(imageElement, position);
-                            if (caption) {
-                                const captionElement = writer.createElement('imageCaption');
-                                writer.appendText(caption, captionElement);
-                                writer.append(captionElement, imageElement);
-                            }
-                        });
-                        suppressDataEvents = true;
-                        editor.setData(editor.getData());
-                        suppressDataEvents = false;
-                    },
-                    focus: function () {
-                        editor.focus();
-                    }
-                };
+        // Image button -> native photo picker (upload happens in Swift).
+        quill.getModule('toolbar').addHandler('image', function () {
+            window.webkit.messageHandlers.insertImageRequested.postMessage('image');
+        });
 
-                window.webkit.messageHandlers.editorReady.postMessage('ready');
-            })
-            .catch(function (error) {
-                window.webkit.messageHandlers.editorError.postMessage(error.message || String(error));
-            });
+        // Video button -> native alert to enter a URL.
+        quill.getModule('toolbar').addHandler('video', function () {
+            window.webkit.messageHandlers.insertVideoRequested.postMessage('video');
+        });
+
+        window.QuillBridge = {
+            setHTML: function (html) {
+                const contents = quill.clipboard.convert({ html: html });
+                quill.setContents(contents, Quill.sources.SILENT);
+                quill.setSelection(0, 0, Quill.sources.SILENT);
+            },
+            getHTML: function () {
+                return quill.getSemanticHTML();
+            },
+            insertImage: function (url, caption) {
+                const index = quill.getSelection(true).index;
+                quill.insertEmbed(index, 'image', url, Quill.sources.USER);
+                if (caption) {
+                    quill.insertText(index + 1, '\n', Quill.sources.USER);
+                    quill.insertText(index + 2, caption, captionFormat, Quill.sources.USER);
+                    quill.format(index + 2, 0, captionFormat, Quill.sources.USER);
+                }
+                notify();
+            },
+            insertVideo: function (url) {
+                const index = quill.getSelection(true).index;
+                quill.insertEmbed(index, 'video', url, Quill.sources.USER);
+                notify();
+            },
+            focus: function () {
+                quill.focus();
+            }
+        };
+
+        window.webkit.messageHandlers.editorReady.postMessage('ready');
     </script>
 </body>
 </html>

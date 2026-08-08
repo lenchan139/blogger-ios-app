@@ -1,8 +1,9 @@
 import SwiftUI
 import WebKit
 
-/// CKEditor 5 embedded in a WKWebView. Content flows in/out as an HTML string,
-/// matching the Blogger API's `content` field and the host's `htmlBody` binding.
+/// Quill.js rich text editor embedded in a WKWebView. Content flows in/out as
+/// an HTML string, matching the Blogger API's `content` field and the host's
+/// `htmlBody` binding.
 ///
 /// HTML direction:
 ///  - Native -> JS: `setData(html)` (on load, external changes, source toggle)
@@ -24,6 +25,8 @@ struct CKEditorView: UIViewRepresentable {
         config.userContentController.add(context.coordinator, name: "editorContent")
         config.userContentController.add(context.coordinator, name: "editorReady")
         config.userContentController.add(context.coordinator, name: "editorError")
+        config.userContentController.add(context.coordinator, name: "insertImageRequested")
+        config.userContentController.add(context.coordinator, name: "insertVideoRequested")
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
@@ -39,8 +42,10 @@ struct CKEditorView: UIViewRepresentable {
 
     func updateUIView(_ uiView: WKWebView, context: Context) {
         context.coordinator.parent = self
+        // Keep ref wiring in sync (host callbacks may be set after makeUIView).
+        editorRef.coordinator = context.coordinator
         // External edits (e.g. the HTML source toggle) must flow back into
-        // CKEditor; skip when the editor itself produced the change.
+        // the editor; skip when the editor itself produced the change.
         if html != context.coordinator.lastReported {
             context.coordinator.setData(html)
         }
@@ -83,8 +88,8 @@ struct CKEditorView: UIViewRepresentable {
                 .replacingOccurrences(of: "\"", with: "\\\"")
                 .replacingOccurrences(of: "\n", with: "\\n")
                 .replacingOccurrences(of: "\r", with: "\\r")
-            webView?.evaluateJavaScript("window.CKEditorBridge && window.CKEditorBridge.setData(\"\(escaped)\")") { _, error in
-                if let error { print("[CKEditor] setData error: \(error.localizedDescription)") }
+            webView?.evaluateJavaScript("window.QuillBridge && window.QuillBridge.setHTML(\"\(escaped)\")") { _, error in
+                if let error { print("[Editor] setHTML error: \(error.localizedDescription)") }
             }
         }
 
@@ -92,14 +97,18 @@ struct CKEditorView: UIViewRepresentable {
             let captionEscaped = caption
                 .replacingOccurrences(of: "\\", with: "\\\\")
                 .replacingOccurrences(of: "\"", with: "\\\"")
-            let altEscaped = (alt ?? "")
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "\"", with: "\\\"")
             let js = """
-            window.CKEditorBridge && window.CKEditorBridge.insertImage("\(url)", "\(captionEscaped)", "\(altEscaped)")
+            window.QuillBridge && window.QuillBridge.insertImage("\(url)", "\(captionEscaped)")
             """
             webView?.evaluateJavaScript(js) { _, error in
-                if let error { print("[CKEditor] insertImage error: \(error.localizedDescription)") }
+                if let error { print("[Editor] insertImage error: \(error.localizedDescription)") }
+            }
+        }
+
+        func insertVideo(url: String) {
+            let urlEscaped = url.replacingOccurrences(of: "\\", with: "\\\\")
+            webView?.evaluateJavaScript("window.QuillBridge && window.QuillBridge.insertVideo(\"\(urlEscaped)\")") { _, error in
+                if let error { print("[Editor] insertVideo error: \(error.localizedDescription)") }
             }
         }
 
@@ -116,23 +125,46 @@ struct CKEditorView: UIViewRepresentable {
                         self.parent.html = html
                     }
                 }
+            case "insertImageRequested":
+                onInsertImageRequested?()
+            case "insertVideoRequested":
+                onInsertVideoRequested?()
             case "editorReady":
                 break
             case "editorError":
-                print("[CKEditor] JS error: \(message.body)")
+                print("[Editor] JS error: \(message.body)")
             default:
                 break
             }
         }
+
+        /// Called when the user taps the image button inside the editor.
+        var onInsertImageRequested: (() -> Void)?
+        /// Called when the user taps the video button inside the editor.
+        var onInsertVideoRequested: (() -> Void)?
     }
 }
 
 /// Shared reference so the host view can reach into the live editor
 /// (e.g. to insert a just-uploaded image).
 final class CKEditorRef: ObservableObject {
-    var coordinator: CKEditorView.Coordinator?
+    /// Callback wired by the host: opens the photo picker / camera.
+    var onInsertImageRequested: (() -> Void)?
+    /// Callback wired by the host: prompts for a video URL.
+    var onInsertVideoRequested: (() -> Void)?
+
+    var coordinator: CKEditorView.Coordinator? {
+        didSet {
+            coordinator?.onInsertImageRequested = onInsertImageRequested
+            coordinator?.onInsertVideoRequested = onInsertVideoRequested
+        }
+    }
 
     func insertImage(url: String, caption: String, alt: String?) {
         coordinator?.insertImage(url: url, caption: caption, alt: alt)
+    }
+
+    func insertVideo(url: String) {
+        coordinator?.insertVideo(url: url)
     }
 }

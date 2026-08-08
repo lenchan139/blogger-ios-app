@@ -26,6 +26,8 @@ struct PostEditorView: View {
     @State private var restoredFromDraft = false
     @State private var autoSaveTask: Task<Void, Never>?
     @StateObject private var ckEditorRef = CKEditorRef()
+    @State private var showingVideoPrompt = false
+    @State private var videoURL = ""
 
     init(blog: Blog, post: Post?, draft: LocalDraft? = nil) {
         self.blog = blog
@@ -169,6 +171,22 @@ struct PostEditorView: View {
             }
         }
         .onAppear { loadInitialContent() }
+        .onAppear {
+            ckEditorRef.onInsertImageRequested = { showingImagePicker = true }
+            ckEditorRef.onInsertVideoRequested = { showingVideoPrompt = true }
+        }
+        .alert("Insert video", isPresented: $showingVideoPrompt) {
+            TextField("YouTube or MP4 URL", text: $videoURL)
+                .keyboardType(.URL)
+                .autocapitalization(.none)
+                .autocorrectionDisabled()
+            Button("Insert") {
+                let url = videoURL.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !url.isEmpty { ckEditorRef.insertVideo(url: url) }
+                videoURL = ""
+            }
+            Button("Cancel", role: .cancel) { videoURL = "" }
+        }
         .onChange(of: title) { _, _ in scheduleAutoSave() }
         .onChange(of: htmlBody) { _, _ in scheduleAutoSave() }
         .onChange(of: labels) { _, _ in scheduleAutoSave() }
