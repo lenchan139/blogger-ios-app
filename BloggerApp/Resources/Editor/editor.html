@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Blogger Editor</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+        }
+        body {
+            font-family: -apple-system, "SF Pro Text", sans-serif;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .tiptap {
+            font-size: 17px;
+            line-height: 1.55;
+            min-height: 260px;
+            padding: 12px 4px;
+            outline: none;
+        }
+        .tiptap p.is-editor-empty:first-child::before {
+            content: attr(data-placeholder);
+            color: rgba(60, 60, 67, 0.35);
+            float: left;
+            height: 0;
+            pointer-events: none;
+        }
+        .tiptap img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .tiptap img.ProseMirror-selectednode {
+            outline: 3px solid rgba(255, 125, 3, 0.5);
+        }
+        .tiptap blockquote {
+            border-left: 3px solid rgba(60, 60, 67, 0.3);
+            margin-left: 0;
+            padding-left: 12px;
+            color: rgba(60, 60, 67, 0.8);
+        }
+        .tiptap a {
+            color: #f57c03;
+        }
+        .tiptap hr {
+            border: none;
+            border-top: 1px solid rgba(60, 60, 67, 0.2);
+            margin: 16px 0;
+        }
+        .tiptap pre {
+            background: rgba(60, 60, 67, 0.07);
+            border-radius: 8px;
+            padding: 10px;
+            font-family: ui-monospace, SFMono-Regular, monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="editor"></div>
+
+    <script src="tiptap.js"></script>
+    <script>
+        // Boot once the bundle is loaded.
+        function boot() {
+            BloggerTipTap.init('editor', 'Write your post…');
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', boot);
+        } else {
+            boot();
+        }
+    </script>
+</body>
+</html>
