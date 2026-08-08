@@ -13,6 +13,7 @@ struct RichEditorView: View {
     @State private var showLinkSheet = false
     @State private var linkText = ""
     @State private var linkURL = "https://"
+    @State private var editorHeight: CGFloat = 320
 
     init(
         html: Binding<String>,
@@ -29,9 +30,11 @@ struct RichEditorView: View {
         TipTapWebView(
             html: $html,
             editorRef: editorRef,
+            height: $editorHeight,
             onLinkRequested: { showLinkSheet = true }
         )
-        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 320)
+        .frame(minWidth: 0, maxWidth: .infinity)
+        .frame(height: max(320, editorHeight))
         .sheet(isPresented: $showLinkSheet) {
             linkSheet
         }
@@ -97,10 +100,13 @@ private extension String {
     }
 }
 
-/// WKWebView representable hosting the TipTap page.
+/// WKWebView representable hosting the TipTap page. The webview's internal
+/// scrolling is disabled; it reports its content height so SwiftUI sizes it to
+/// fit inside the host's ScrollView (title + labels + editor scroll together).
 struct TipTapWebView: UIViewRepresentable {
     @Binding var html: String
     let editorRef: RichEditorRef
+    @Binding var height: CGFloat
     var onLinkRequested: (() -> Void)?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -112,6 +118,7 @@ struct TipTapWebView: UIViewRepresentable {
         config.userContentController.add(context.coordinator, name: "ready")
         config.userContentController.add(context.coordinator, name: "editorError")
         config.userContentController.add(context.coordinator, name: "editorFocus")
+        config.userContentController.add(context.coordinator, name: "editorHeight")
         config.userContentController.add(context.coordinator, name: "insertImageRequested")
         config.userContentController.add(context.coordinator, name: "insertLinkRequested")
 
@@ -120,6 +127,8 @@ struct TipTapWebView: UIViewRepresentable {
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
         webView.scrollView.keyboardDismissMode = .interactive
+        // Let the host ScrollView own scrolling -> single scroll for the page.
+        webView.scrollView.isScrollEnabled = false
         webView.navigationDelegate = context.coordinator
         context.coordinator.webView = webView
         editorRef.coordinator = context.coordinator
@@ -189,6 +198,14 @@ struct TipTapWebView: UIViewRepresentable {
                 print("[TipTap] JS error: \(message.body)")
             case "editorFocus":
                 break
+            case "editorHeight":
+                if let h = message.body as? NSNumber {
+                    let newHeight = CGFloat(h.doubleValue)
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self, abs(self.parent.height - newHeight) > 1 else { return }
+                        self.parent.height = newHeight
+                    }
+                }
             case "insertImageRequested":
                 DispatchQueue.main.async { [weak self] in
                     self?.parent.editorRef.onImageRequested?()

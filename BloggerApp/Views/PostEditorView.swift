@@ -126,16 +126,6 @@ struct PostEditorView: View {
                         .help(showingSource ? "Rich view" : "HTML source")
                 }
                 Button {
-                    showingImagePicker = true
-                } label: {
-                    Image(systemName: "photo.on.rectangle.angled")
-                }
-                Button {
-                    showingCamera = true
-                } label: {
-                    Image(systemName: "camera")
-                }
-                Button {
                     showingPreview = true
                 } label: {
                     Image(systemName: "eye")
