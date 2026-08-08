@@ -25,6 +25,7 @@ struct PostEditorView: View {
     @State private var errorMessage: String?
     @State private var restoredFromDraft = false
     @State private var autoSaveTask: Task<Void, Never>?
+    @StateObject private var ckEditorRef = CKEditorRef()
 
     init(blog: Blog, post: Post?, draft: LocalDraft? = nil) {
         self.blog = blog
@@ -74,8 +75,8 @@ struct PostEditorView: View {
                         .padding(6)
                         .background(Color(.secondarySystemBackground))
                 } else {
-                    BlockEditorView(html: $htmlBody)
-                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 280)
+                    CKEditorView(html: $htmlBody, editorRef: ckEditorRef)
+                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 320)
                 }
 
                 if let errorMessage {
@@ -242,10 +243,9 @@ struct PostEditorView: View {
 
     private func insertImage(payload: ImageEditPayload, edit: ImageEditResult) async {
         do {
-            NotificationCenter.default.post(name: BlockEditorNotifications.imageUploadBegan, object: nil)
             let url = try await appState.imageUploader.upload(imageData: edit.finalData, contentType: "image/jpeg")
             let caption = edit.caption.trimmingCharacters(in: .whitespacesAndNewlines)
-            BlockEditorNotifications.postImageUploadFinished(url: url.absoluteString, caption: caption, alt: payload.captionEscaped)
+            ckEditorRef.insertImage(url: url.absoluteString, caption: caption, alt: payload.captionEscaped)
         } catch {
             errorMessage = "Image upload failed: \(error.localizedDescription)"
         }

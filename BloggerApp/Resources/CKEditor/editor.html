@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Blogger Editor</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: transparent;
+        }
+        body {
+            font-family: -apple-system, "SF Pro Text", sans-serif;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        /* Match the app's default text size */
+        .ck.ck-editor__editable_inline {
+            font-size: 17px;
+            line-height: 1.5;
+            min-height: 280px;
+            padding: 12px;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent;
+        }
+        .ck.ck-editor__editable_inline > *:first-child {
+            margin-top: 0;
+        }
+        .ck.ck-toolbar {
+            border-radius: 8px;
+            border: 1px solid rgba(60, 60, 67, 0.15) !important;
+            background: rgba(120, 120, 128, 0.08) !important;
+        }
+        .ck.ck-editor__main {
+            border: 1px solid rgba(60, 60, 67, 0.15) !important;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .ck.ck-editor__editable_inline:focus {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="editor"></div>
+
+    <script src="ckeditor.js"></script>
+    <script>
+        let editor = null;
+        let suppressDataEvents = false;
+
+        ClassicEditor
+            .create(document.querySelector('#editor'), {
+                toolbar: [
+                    'undo', 'redo', '|',
+                    'heading', '|',
+                    'bold', 'italic', 'underline', 'strikethrough', '|',
+                    'bulletedList', 'numberedList', 'blockQuote', '|',
+                    'link', 'insertTable', 'codeBlock', 'horizontalLine', '|',
+                    'removeFormat'
+                ],
+                heading: {
+                    options: [
+                        { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+                        { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                        { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+                        { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' },
+                        { model: 'heading4', view: 'h4', title: 'Heading 4', class: 'ck-heading_heading4' }
+                    ]
+                },
+                link: {
+                    addTargetToExternalLinks: true
+                },
+                placeholder: 'Write your post…'
+            })
+            .then(function (createdEditor) {
+                editor = createdEditor;
+
+                // Notify native whenever content changes.
+                editor.model.document.on('change:data', function () {
+                    if (suppressDataEvents) { return; }
+                    window.webkit.messageHandlers.editorContent.postMessage(editor.getData());
+                });
+
+                // Native -> JS API.
+                window.CKEditorBridge = {
+                    setData: function (html) {
+                        suppressDataEvents = true;
+                        editor.setData(html);
+                        suppressDataEvents = false;
+                    },
+                    getData: function () {
+                        return editor.getData();
+                    },
+                    insertImage: function (url, caption, alt) {
+                        const src = url;
+                        const figure = document.createElement('figure');
+                        figure.innerHTML = '<img src="' + src + '"' + (alt ? ' alt="' + alt + '"' : '') + '/>';
+                        if (caption) {
+                            const figcaption = document.createElement('figcaption');
+                            figcaption.textContent = caption;
+                            figure.appendChild(figcaption);
+                        }
+                        editor.model.change(function (writer) {
+                            const position = editor.model.document.selection.getFirstPosition();
+                            const imageElement = writer.createElement('imageBlock', {
+                                src: src,
+                                alt: alt || ''
+                            });
+                            editor.model.insertContent(imageElement, position);
+                            if (caption) {
+                                const captionElement = writer.createElement('imageCaption');
+                                writer.appendText(caption, captionElement);
+                                writer.append(captionElement, imageElement);
+                            }
+                        });
+                        suppressDataEvents = true;
+                        editor.setData(editor.getData());
+                        suppressDataEvents = false;
+                    },
+                    focus: function () {
+                        editor.focus();
+                    }
+                };
+
+                window.webkit.messageHandlers.editorReady.postMessage('ready');
+            })
+            .catch(function (error) {
+                window.webkit.messageHandlers.editorError.postMessage(error.message || String(error));
+            });
+    </script>
+</body>
+</html>
