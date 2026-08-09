@@ -96,23 +96,23 @@ struct PageEditorView: View {
                 .disabled(isSaving || isUploading)
             }
             ToolbarItemGroup(placement: .principal) {
-                Button {
-                    showingSource.toggle()
-                } label: {
-                    Image(systemName: showingSource ? "textformat" : "chevron.left.forwardslash.chevron.right")
-                        .help(showingSource ? "Rich view" : "HTML source")
-                }
-                Button {
-                    showingPreview = true
-                } label: {
-                    Image(systemName: "eye")
-                }
-                if isExisting {
-                    Menu {
-                        Button("Delete page", role: .destructive) { Task { await delete() } }
+                Menu {
+                    Button {
+                        showingSource.toggle()
                     } label: {
-                        Image(systemName: "ellipsis.circle")
+                        Label(showingSource ? "Rich view" : "HTML source", systemImage: showingSource ? "textformat" : "chevron.left.forwardslash.chevron.right")
                     }
+                    Button {
+                        showingPreview = true
+                    } label: {
+                        Label("Preview", systemImage: "eye")
+                    }
+                    if isExisting {
+                        Divider()
+                        Button("Delete page", role: .destructive) { Task { await delete() } }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -123,7 +123,7 @@ struct PageEditorView: View {
                     if isSaving {
                         ProgressView()
                     } else {
-                        Image(systemName: "square.and.arrow.down")
+                        Text("Save")
                             .bold()
                     }
                 }

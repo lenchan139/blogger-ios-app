@@ -103,28 +103,28 @@ struct PostEditorView: View {
                 .disabled(isSaving || isUploading)
             }
             ToolbarItemGroup(placement: .principal) {
-                Button {
-                    showingSource.toggle()
-                } label: {
-                    Image(systemName: showingSource ? "textformat" : "chevron.left.forwardslash.chevron.right")
-                        .help(showingSource ? "Rich view" : "HTML source")
-                }
-                Button {
-                    showingPreview = true
-                } label: {
-                    Image(systemName: "eye")
-                }
-                if isExisting {
-                    Menu {
+                Menu {
+                    Button {
+                        showingSource.toggle()
+                    } label: {
+                        Label(showingSource ? "Rich view" : "HTML source", systemImage: showingSource ? "textformat" : "chevron.left.forwardslash.chevron.right")
+                    }
+                    Button {
+                        showingPreview = true
+                    } label: {
+                        Label("Preview", systemImage: "eye")
+                    }
+                    if isExisting {
+                        Divider()
                         if existingPost?.status == .draft {
                             Button("Publish") { Task { await publish() } }
                         } else {
                             Button("Revert to draft") { Task { await revert() } }
                         }
                         Button("Delete post", role: .destructive) { Task { await delete() } }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
                     }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -135,7 +135,7 @@ struct PostEditorView: View {
                     if isSaving {
                         ProgressView()
                     } else {
-                        Image(systemName: "square.and.arrow.down")
+                        Text("Save")
                             .bold()
                     }
                 }
