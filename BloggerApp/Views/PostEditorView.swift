@@ -94,7 +94,26 @@ struct PostEditorView: View {
         .navigationTitle(isExisting ? "Edit post" : "New post")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                }
+                .disabled(isSaving || isUploading)
+            }
+            ToolbarItemGroup(placement: .principal) {
+                Button {
+                    showingSource.toggle()
+                } label: {
+                    Image(systemName: showingSource ? "textformat" : "chevron.left.forwardslash.chevron.right")
+                        .help(showingSource ? "Rich view" : "HTML source")
+                }
+                Button {
+                    showingPreview = true
+                } label: {
+                    Image(systemName: "eye")
+                }
                 if isExisting {
                     Menu {
                         if existingPost?.status == .draft {
@@ -107,6 +126,8 @@ struct PostEditorView: View {
                         Image(systemName: "ellipsis.circle")
                     }
                 }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     if isSaving { return }
                     Task { await save(isDraft: !isExisting) }
@@ -114,24 +135,11 @@ struct PostEditorView: View {
                     if isSaving {
                         ProgressView()
                     } else {
-                        Text("Save")
+                        Image(systemName: "square.and.arrow.down")
                             .bold()
                     }
                 }
                 .disabled(isSaving)
-            }
-            ToolbarItemGroup(placement: .topBarLeading) {
-                Button {
-                    showingSource.toggle()
-                } label: {
-                    Image(systemName: showingSource ? "textformat" : "chevron.left.forwardslash.chevron.right")
-                        .help(showingSource ? "Rich view" : "HTML source")
-                }
-                Button {
-                    showingPreview = true
-                } label: {
-                    Image(systemName: "eye")
-                }
             }
         }
         .sheet(isPresented: $showingImagePicker) {

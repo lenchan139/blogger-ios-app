@@ -87,8 +87,9 @@ final class BloggerClient {
 
     // MARK: - Pages
 
-    func listPages(blogId: String, pageToken: String? = nil) async throws -> PageList {
+    func listPages(blogId: String, status: String? = nil, pageToken: String? = nil) async throws -> PageList {
         var query: [String: String] = [:]
+        if let status { query["status"] = status }
         if let pageToken { query["pageToken"] = pageToken }
         return try await request(path: "/blogs/\(blogId)/pages", query: query)
     }

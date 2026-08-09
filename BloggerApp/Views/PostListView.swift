@@ -29,7 +29,9 @@ struct PostListView: View {
 
     @State private var filter: Filter = .published
     @State private var postsByFilter: [Filter: [Post]] = [:]
+    @State private var nextPageTokens: [Filter: String] = [:]
     @State private var isLoading = false
+    @State private var isLoadingMore = false
     @State private var errorMessage: String?
     @State private var commentsPost: Post?
     @State private var labelPost: Post?
@@ -263,51 +265,56 @@ struct PostListView: View {
                 )
             }
         } else {
-            List(posts) { post in
-                Button {
-                    editingPost = post
-                } label: {
-                    PostRow(post: post)
-                }
-                .buttonStyle(.plain)
-                .contextMenu {
+            List {
+                ForEach(posts) { post in
                     Button {
-                        commentsPost = post
+                        editingPost = post
                     } label: {
-                        Label("Comments", systemImage: "text.bubble")
+                        PostRow(post: post)
                     }
-                    Button {
-                        Task { await togglePublish(post) }
-                    } label: {
-                        if post.status == .draft {
-                            Label("Publish", systemImage: "paperplane.fill")
-                        } else {
-                            Label("Revert to draft", systemImage: "arrow.uturn.backward")
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            commentsPost = post
+                        } label: {
+                            Label("Comments", systemImage: "text.bubble")
                         }
-                    }
-                    Button {
-                        labelPost = post
-                        labelDraftLabels = post.labels ?? []
-                    } label: {
-                        Label("Apply labels", systemImage: "tag")
-                    }
-                    Button {
+                        Button {
+                            Task { await togglePublish(post) }
+                        } label: {
+                            if post.status == .draft {
+                                Label("Publish", systemImage: "paperplane.fill")
+                            } else {
+                                Label("Revert to draft", systemImage: "arrow.uturn.backward")
+                            }
+                        }
+                        Button {
+                            labelPost = post
+                            labelDraftLabels = post.labels ?? []
+                        } label: {
+                            Label("Apply labels", systemImage: "tag")
+                        }
+                        Button {
+                            if let urlString = post.url, let url = URL(string: urlString) {
+                                previewItem = WebPreviewItem(url: url)
+                            }
+                        } label: {
+                            Label("Preview", systemImage: "eye")
+                        }
                         if let urlString = post.url, let url = URL(string: urlString) {
-                            previewItem = WebPreviewItem(url: url)
+                            ShareLink(item: url) {
+                                Label("Share link", systemImage: "square.and.arrow.up")
+                            }
                         }
-                    } label: {
-                        Label("Preview", systemImage: "eye")
-                    }
-                    if let urlString = post.url, let url = URL(string: urlString) {
-                        ShareLink(item: url) {
-                            Label("Share link", systemImage: "square.and.arrow.up")
+                        Button(role: .destructive) {
+                            discardPost = post
+                        } label: {
+                            Label("Discard post", systemImage: "trash")
                         }
                     }
-                    Button(role: .destructive) {
-                        discardPost = post
-                    } label: {
-                        Label("Discard post", systemImage: "trash")
-                    }
+                }
+                if hasMorePosts(for: filter) {
+                    loadMoreRow(for: filter)
                 }
             }
             .listStyle(.plain)
@@ -321,6 +328,36 @@ struct PostListView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.15), value: isLoading)
+        }
+    }
+
+    private func hasMorePosts(for filter: Filter) -> Bool {
+        nextPageTokens[filter] != nil && !(postsByFilter[filter]?.isEmpty ?? true)
+    }
+
+    @ViewBuilder
+    private func loadMoreRow(for filter: Filter) -> some View {
+        Button {
+            Task { await loadMorePosts(for: filter) }
+        } label: {
+            HStack {
+                Spacer()
+                if isLoadingMore {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Image(systemName: "arrow.down")
+                    Text("Load more")
+                }
+                Spacer()
+            }
+            .padding(.vertical, 10)
+            .foregroundStyle(.secondary)
+        }
+        .disabled(isLoadingMore)
+        .onAppear {
+            // Auto-load the next page when this row scrolls into view.
+            Task { await loadMorePosts(for: filter) }
         }
     }
 
@@ -339,6 +376,7 @@ struct PostListView: View {
         do {
             let list = try await appState.api.listPosts(blogId: blog.id, status: filter.status)
             postsByFilter[filter] = list.items ?? []
+            nextPageTokens[filter] = list.nextPageToken
         } catch {
             // Pull-to-refresh can cancel the in-flight task; that's not an error.
             if Task.isCancelled { return }
@@ -346,6 +384,28 @@ struct PostListView: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func loadMorePosts(for filter: Filter) async {
+        guard let blog = selectedBlog else { return }
+        if filter == .locals { return }
+        guard let token = nextPageTokens[filter], !token.isEmpty else { return }
+        guard !isLoadingMore else { return }
+        isLoadingMore = true
+        defer { isLoadingMore = false }
+        do {
+            let list = try await appState.api.listPosts(blogId: blog.id, pageToken: token, status: filter.status)
+            var all = postsByFilter[filter] ?? []
+            // Avoid duplicates if the same page token is requested twice.
+            let existingIDs = Set(all.map(\.id))
+            all.append(contentsOf: (list.items ?? []).filter { !existingIDs.contains($0.id) })
+            postsByFilter[filter] = all
+            nextPageTokens[filter] = list.nextPageToken
+        } catch {
+            if Task.isCancelled { return }
+            if let urlErr = error as? URLError, urlErr.code == .cancelled { return }
+            errorMessage = error.localizedDescription
+        }
     }
 
     // MARK: - Post actions
