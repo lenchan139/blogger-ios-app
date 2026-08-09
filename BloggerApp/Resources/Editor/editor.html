@@ -70,6 +70,20 @@
         .tiptap pre code { background: none; padding: 0; }
         .tiptap mark { background: #ffe58f; border-radius: 2px; padding: 0 2px; }
 
+        /* ---- Pending image upload placeholder ---- */
+        .tiptap img[src^="blogger-upload://pending-"] {
+            min-width: 96px;
+            min-height: 72px;
+            border-radius: 8px;
+            background: var(--bg-hover);
+            opacity: 0.55;
+            outline: 1px dashed rgba(128, 128, 128, 0.5);
+        }
+        .tiptap img[src^="blogger-upload://pending-"]::after {
+            content: "⏳";
+            font-size: 28px;
+        }
+
         /* ---- Cursor-traced floating toolbar ---- */
         .cursor-toolbar {
             position: absolute;

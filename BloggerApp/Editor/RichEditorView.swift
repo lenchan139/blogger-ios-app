@@ -86,6 +86,12 @@ final class RichEditorRef: ObservableObject {
         coordinator?.run(script: "window.BloggerTipTap && window.BloggerTipTap.setLink(\(url.jsEscaped))")
     }
 
+    /// Replaces the editor's whole content (used to swap a pending image
+    /// placeholder for the final URL, or drop it on failure).
+    func setHTML(_ html: String) {
+        coordinator?.setHTML(html)
+    }
+
     func insertImage(url: String, caption: String) {
         coordinator?.run(script: "window.BloggerTipTap && window.BloggerTipTap.insertImage(\(url.jsEscaped), \(caption.jsEscaped))")
     }

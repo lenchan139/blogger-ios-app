@@ -24,6 +24,7 @@ struct PostEditorView: View {
     @State private var showingLabelsSheet = false
     @State private var errorMessage: String?
     @State private var alertMessage: String?
+    @State private var isUploading = false
     @State private var restoredFromDraft = false
     @State private var autoSaveTask: Task<Void, Never>?
     @StateObject private var richEditorRef = RichEditorRef()
@@ -169,6 +170,22 @@ struct PostEditorView: View {
         } message: {
             Text(alertMessage ?? "")
         }
+        .overlay {
+            if isUploading {
+                ZStack {
+                    Color.black.opacity(0.25).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .controlSize(.large)
+                        Text("Uploading image…")
+                            .font(.headline)
+                    }
+                    .padding(24)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .padding()
+                }
+            }
+        }
         .onAppear { loadInitialContent() }
         .onChange(of: title) { _, _ in scheduleAutoSave() }
         .onChange(of: htmlBody) { _, _ in scheduleAutoSave() }
@@ -242,15 +259,43 @@ struct PostEditorView: View {
 
     // MARK: - Image insertion
 
+    /// Inserts a placeholder image in the editor, shows an uploading spinner,
+    /// then swaps the placeholder for the real URL on success or removes it
+    /// if the upload fails.
     private func insertImage(payload: ImageEditPayload, edit: ImageEditResult) async {
+        let placeholderID = UUID().uuidString
+        let placeholderURL = "blogger-upload://pending-\(placeholderID)"
+        let caption = edit.caption.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 1. Reserve the spot in the editor with a unique placeholder src.
+        richEditorRef.insertImage(url: placeholderURL, caption: caption)
+        isUploading = true
+        await waitForPlaceholder(placeholderURL)
+
         do {
             let url = try await appState.imageUploader.upload(imageData: edit.finalData, contentType: "image/jpeg")
-            let caption = edit.caption.trimmingCharacters(in: .whitespacesAndNewlines)
-            richEditorRef.insertImage(url: url.absoluteString, caption: caption)
+            // 2. Success: swap the placeholder src for the real URL.
+            htmlBody = htmlBody.replacingOccurrences(of: placeholderURL, with: url.absoluteString)
+            richEditorRef.setHTML(htmlBody)
         } catch {
-            let message = "Image upload failed: \(String(describing: error))"
+            // 3. Failure: remove the placeholder <img> from the document.
             print("[ImageUpload] failed: \(String(describing: error))")
-            alertMessage = message
+            let pattern = "<img[^>]*blogger-upload://pending-\(placeholderID)[^>]*>"
+            htmlBody = htmlBody.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+            richEditorRef.setHTML(htmlBody)
+            alertMessage = "Image upload failed: \(String(describing: error))"
+        }
+
+        isUploading = false
+    }
+
+    /// The editor reports its HTML back asynchronously via the JS bridge;
+    /// wait (briefly) until our placeholder shows up so replace/remove
+    /// operations have something to find.
+    private func waitForPlaceholder(_ placeholderURL: String) async {
+        let deadline = Date().addingTimeInterval(1.0)
+        while !htmlBody.contains(placeholderURL) && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 25_000_000)
         }
     }
 
