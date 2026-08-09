@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — BloggerApp</title>
+    <meta name="description" content="Privacy policy for the BloggerApp iOS client." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23F57C03'/><circle cx='50' cy='50' r='32' fill='white'/><path d='M50 18 l22 22 -4 4 -22 -22 z M22 78 l10 -28 24 24 -28 10 z' fill='%23F57C03'/></svg>" />
+    <style>
+        :root {
+            --accent: #F57C03;
+            --ink: #1c1c1e;
+            --muted: #6e6e73;
+            --bg: #ffffff;
+            --border: #e5e5ea;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --ink: #f5f5f7;
+                --muted: #98989d;
+                --bg: #000000;
+                --border: #2c2c2e;
+            }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--ink);
+            background: var(--bg);
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .container { max-width: 720px; margin: 0 auto; padding: 56px 24px 80px; }
+        header { margin-bottom: 40px; }
+        header .brand {
+            display: inline-flex; align-items: center; gap: 10px;
+            font-weight: 700; font-size: 1.05rem; margin-bottom: 28px;
+        }
+        header .badge { display: inline-block; font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
+        h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+        .updated { color: var(--muted); font-size: 0.9rem; }
+        h2 { font-size: 1.25rem; font-weight: 700; margin: 36px 0 12px; }
+        p, li { color: var(--ink); }
+        ul { padding-left: 22px; margin: 8px 0; }
+        li { margin: 6px 0; }
+        .muted { color: var(--muted); }
+        footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.88rem; }
+        footer a { color: var(--muted); text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a class="brand" href="./">
+                <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100" height="100" rx="22" fill="#F57C03"/>
+                    <circle cx="50" cy="50" r="32" fill="white"/>
+                    <path d="M50 18 l22 22 -4 4 -22 -22 z M22 78 l10 -28 24 24 -28 10 z" fill="#F57C03"/>
+                </svg>
+                BloggerApp
+            </a>
+            <span class="badge">Privacy Policy</span>
+            <h1>Privacy Policy</h1>
+            <p class="updated">Last updated: August 9, 2026</p>
+        </header>
+
+        <h2>Overview</h2>
+        <p>BloggerApp ("we", "our") is a homework project — an unofficial iOS client for Blogger. This policy explains what information the app accesses and how it is handled. We do not sell your data, and we do not run any servers of our own: all data flows directly between your device and Google.</p>
+
+        <h2>Information we access</h2>
+        <p>When you sign in with your Google Account, the app requests the following OAuth scopes:</p>
+        <ul>
+            <li><strong>Blogger API</strong> — read and manage your blogs, posts, pages, labels and comments.</li>
+            <li><strong>Google Photos (appendonly + read app-created data)</strong> — upload images you choose for insertion into posts, and read back only the media items the app itself created.</li>
+        </ul>
+        <p>The app does <strong>not</strong> request access to your email, contacts, calendar, Drive, or general Photos library.</p>
+
+        <h2>How your data is used</h2>
+        <ul>
+            <li><strong>Posts, pages, labels, comments</strong> — shown to you inside the app and edited via the Blogger API at your request.</li>
+            <li><strong>Images</strong> — uploaded to Google Photos only when you explicitly insert an image, and embedded into post content as a URL.</li>
+            <li><strong>Local drafts</strong> — unsaved edits are stored on-device as JSON files in the app's Application Support directory. They never leave your device except when you save or publish the post via the Blogger API.</li>
+        </ul>
+
+        <h2>Data storage</h2>
+        <ul>
+            <li><strong>On your device</strong>: your Google refresh token is stored in the iOS Keychain; local drafts are stored as files in Application Support. Uninstall the app or sign out to remove them.</li>
+            <li><strong>On Google's servers</strong>: all blog content and uploaded images are stored by Google under your account. Refer to the <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> for details.</li>
+        </ul>
+
+        <h2>Third-party services</h2>
+        <ul>
+            <li><strong>Google</strong> — authentication (Google Sign-In), Blogger API v3, and the Google Photos Library API. Google's privacy policy applies to data stored in your Google Account.</li>
+        </ul>
+        <p>We do not use analytics, advertising, or tracking SDKs. The app makes no network requests other than to Google's APIs (and to fetch images you explicitly insert).</p>
+
+        <h2>Image URLs and expiry</h2>
+        <p>Google Photos image URLs (base URLs) embedded in posts expire approximately 60 minutes after creation. We do not cache or redistribute image bytes.</p>
+
+        <h2>Your choices</h2>
+        <ul>
+            <li><strong>Sign out</strong> — revokes the app's local session and removes the stored token from the Keychain.</li>
+            <li><strong>Google Account settings</strong> — you can review or revoke the app's permissions at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>.</li>
+            <li><strong>Delete local drafts</strong> — drafts are deleted when you save/publish the related post, delete the post, or uninstall the app.</li>
+        </ul>
+
+        <h2>Children's privacy</h2>
+        <p>The app is not directed to children under 13 and does not knowingly collect personal information from them.</p>
+
+        <h2>Contact</h2>
+        <p>This is a homework project with no formal support channel. For questions about this policy, open an issue in the project's GitHub repository.</p>
+
+        <footer>
+            <p>BloggerApp — a homework project. Not affiliated with Google or Blogger. · <a href="./">Home</a> · <a href="terms.html">Terms of Service</a></p>
+        </footer>
+    </div>
+</body>
+</html>
