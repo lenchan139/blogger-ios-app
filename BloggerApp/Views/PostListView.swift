@@ -8,19 +8,18 @@ struct PostListView: View {
     @Binding var selectedBlogId: String?
 
     enum Filter: String, CaseIterable {
-        case all, published, drafts, locals
+        case published, drafts, locals
         // Blogger's status query param: "live" for published, "draft" for drafts,
-        // nil for "all" (no filter) and "locals" (not an API call).
+        // nil for "locals" (not an API call).
         var status: String? {
             switch self {
-            case .all, .locals: return nil
             case .published: return "live"
             case .drafts: return "draft"
+            case .locals: return nil
             }
         }
         var title: String {
             switch self {
-            case .all: return "All"
             case .published: return "Published"
             case .drafts: return "Drafts"
             case .locals: return "Local"
