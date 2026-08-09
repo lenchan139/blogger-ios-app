@@ -9,6 +9,7 @@ struct CommentsView: View {
     @State private var comments: [Comment] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var commentPendingDelete: Comment?
 
     var body: some View {
         Group {
@@ -27,7 +28,11 @@ struct CommentsView: View {
             } else {
                 List(comments) { comment in
                     CommentRow(comment: comment) { action in
-                        Task { await perform(action, on: comment) }
+                        if action == .delete {
+                            commentPendingDelete = comment
+                        } else {
+                            Task { await perform(action, on: comment) }
+                        }
                     }
                 }
                 .refreshable { await load() }
@@ -35,6 +40,20 @@ struct CommentsView: View {
         }
         .navigationTitle("Comments")
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Delete comment?", isPresented: .init(
+            get: { commentPendingDelete != nil },
+            set: { if !$0 { commentPendingDelete = nil } }
+        )) {
+            Button("Delete", role: .destructive) {
+                if let comment = commentPendingDelete {
+                    commentPendingDelete = nil
+                    Task { await perform(.delete, on: comment) }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes the comment. This action cannot be undone.")
+        }
         .task { await load() }
     }
 

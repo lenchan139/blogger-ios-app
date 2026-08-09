@@ -25,6 +25,7 @@ struct PostEditorView: View {
     @State private var errorMessage: String?
     @State private var alertMessage: String?
     @State private var isUploading = false
+    @State private var showingDeleteConfirmation = false
     @State private var restoredFromDraft = false
     @State private var autoSaveTask: Task<Void, Never>?
     @StateObject private var richEditorRef = RichEditorRef()
@@ -105,6 +106,13 @@ struct PostEditorView: View {
             ToolbarItemGroup(placement: .principal) {
                 Menu {
                     Button {
+                        if isSaving { return }
+                        Task { await save(isDraft: !isExisting) }
+                    } label: {
+                        Label(existingPost?.status == .draft || !isExisting ? "Save draft" : "Save changes",
+                              systemImage: "square.and.arrow.down")
+                    }
+                    Button {
                         showingSource.toggle()
                     } label: {
                         Label(showingSource ? "Rich view" : "HTML source", systemImage: showingSource ? "textformat" : "chevron.left.forwardslash.chevron.right")
@@ -121,25 +129,36 @@ struct PostEditorView: View {
                         } else {
                             Button("Revert to draft") { Task { await revert() } }
                         }
-                        Button("Delete post", role: .destructive) { Task { await delete() } }
+                        Button("Delete post", role: .destructive) { showingDeleteConfirmation = true }
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    if isSaving { return }
-                    Task { await save(isDraft: !isExisting) }
-                } label: {
-                    if isSaving {
-                        ProgressView()
-                    } else {
-                        Text("Save")
+                if existingPost?.status == .draft {
+                    Button {
+                        if isSaving { return }
+                        Task { await publish() }
+                    } label: {
+                        Text("Publish")
                             .bold()
                     }
+                    .disabled(isSaving)
+                } else {
+                    Button {
+                        if isSaving { return }
+                        Task { await save(isDraft: !isExisting) }
+                    } label: {
+                        if isSaving {
+                            ProgressView()
+                        } else {
+                            Text("Save")
+                                .bold()
+                        }
+                    }
+                    .disabled(isSaving)
                 }
-                .disabled(isSaving)
             }
         }
         .sheet(isPresented: $showingImagePicker) {
@@ -177,6 +196,12 @@ struct PostEditorView: View {
             Button("OK") { alertMessage = nil }
         } message: {
             Text(alertMessage ?? "")
+        }
+        .alert("Delete post?", isPresented: $showingDeleteConfirmation) {
+            Button("Delete", role: .destructive) { Task { await delete() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes the post. This action cannot be undone.")
         }
         .overlay {
             if isUploading {

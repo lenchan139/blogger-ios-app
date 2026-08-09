@@ -25,6 +25,7 @@ struct PageEditorView: View {
     @State private var errorMessage: String?
     @State private var alertMessage: String?
     @State private var isUploading = false
+    @State private var showingDeleteConfirmation = false
     @State private var restoredFromDraft = false
     @State private var autoSaveTask: Task<Void, Never>?
     @StateObject private var richEditorRef = RichEditorRef()
@@ -109,7 +110,7 @@ struct PageEditorView: View {
                     }
                     if isExisting {
                         Divider()
-                        Button("Delete page", role: .destructive) { Task { await delete() } }
+                        Button("Delete page", role: .destructive) { showingDeleteConfirmation = true }
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -158,6 +159,12 @@ struct PageEditorView: View {
             Button("OK") { alertMessage = nil }
         } message: {
             Text(alertMessage ?? "")
+        }
+        .alert("Delete page?", isPresented: $showingDeleteConfirmation) {
+            Button("Delete", role: .destructive) { Task { await delete() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes the page. This action cannot be undone.")
         }
         .overlay {
             if isUploading {
