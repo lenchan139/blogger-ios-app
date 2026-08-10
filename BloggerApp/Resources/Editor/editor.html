@@ -12,6 +12,15 @@
             --bg-hover: rgba(55, 53, 47, 0.06);
             --border: rgba(55, 53, 47, 0.13);
         }
+        /* Dark mode: light text on the (transparent) dark host background. */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --fg: #f2f2f7;
+                --fg-soft: rgba(242, 242, 247, 0.6);
+                --bg-hover: rgba(242, 242, 247, 0.12);
+                --border: rgba(242, 242, 247, 0.25);
+            }
+        }
         html, body {
             margin: 0;
             padding: 0;
