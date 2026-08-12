@@ -308,7 +308,11 @@ struct PostEditorView: View {
         do {
             let url = try await appState.imageUploader.upload(imageData: edit.finalData, contentType: "image/jpeg")
             // 2. Success: swap the placeholder src for the real URL.
+            print("[ImageUpload] url=\(url.absoluteString)")
+            print("[ImageUpload] htmlBody contains placeholder: \(htmlBody.contains(placeholderURL))")
+            print("[ImageUpload] htmlBody before: \(htmlBody.prefix(400))")
             htmlBody = htmlBody.replacingOccurrences(of: placeholderURL, with: url.absoluteString)
+            print("[ImageUpload] htmlBody after: \(htmlBody.prefix(400))")
             richEditorRef.setHTML(htmlBody)
         } catch {
             // 3. Failure: remove the placeholder <img> from the document.

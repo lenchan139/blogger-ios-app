@@ -8,7 +8,7 @@ final class AppState: ObservableObject {
     @Published var userAvatarURL: URL?
 
     let api = BloggerClient()
-    let imageUploader: ImageUploading = GooglePhotosUploader()
+    let imageUploader: ImageUploading = GoogleDriveUploader()
     let drafts = LocalDraftStore()
 
     init() {
