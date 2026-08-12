@@ -73,14 +73,14 @@
         <p>When you sign in with your Google Account, the app requests the following OAuth scopes:</p>
         <ul>
             <li><strong>Blogger API</strong> — read and manage your blogs, posts, pages, labels and comments.</li>
-            <li><strong>Google Photos (appendonly + read app-created data)</strong> — upload images you choose for insertion into posts, and read back only the media items the app itself created.</li>
+            <li><strong>Google Drive (drive.file)</strong> — upload images you choose for insertion into posts; access is limited to files created by the app itself.</li>
         </ul>
-        <p>The app does <strong>not</strong> request access to your email, contacts, calendar, Drive, or general Photos library.</p>
+        <p>The app does <strong>not</strong> request access to your email, contacts, calendar, or any existing files in your Google Drive.</p>
 
         <h2>How your data is used</h2>
         <ul>
             <li><strong>Posts, pages, labels, comments</strong> — shown to you inside the app and edited via the Blogger API at your request.</li>
-            <li><strong>Images</strong> — uploaded to Google Photos only when you explicitly insert an image, and embedded into post content as a URL.</li>
+            <li><strong>Images</strong> — uploaded to Google Drive only when you explicitly insert an image, and embedded into post content as a permanent URL.</li>
             <li><strong>Local drafts</strong> — unsaved edits are stored on-device as JSON files in the app's Application Support directory. They never leave your device except when you save or publish the post via the Blogger API.</li>
         </ul>
 
@@ -92,12 +92,12 @@
 
         <h2>Third-party services</h2>
         <ul>
-            <li><strong>Google</strong> — authentication (Google Sign-In), Blogger API v3, and the Google Photos Library API. Google's privacy policy applies to data stored in your Google Account.</li>
+            <li><strong>Google</strong> — authentication (Google Sign-In), Blogger API v3, and the Google Drive API. Google's privacy policy applies to data stored in your Google Account.</li>
         </ul>
         <p>We do not use analytics, advertising, or tracking SDKs. The app makes no network requests other than to Google's APIs (and to fetch images you explicitly insert).</p>
 
-        <h2>Image URLs and expiry</h2>
-        <p>Google Photos image URLs (base URLs) embedded in posts expire approximately 60 minutes after creation. We do not cache or redistribute image bytes.</p>
+        <h2>Image URLs</h2>
+        <p>Images embedded in posts are served from Google's CDN via permanent Google Drive URLs. We do not cache or redistribute image bytes.</p>
 
         <h2>Your choices</h2>
         <ul>

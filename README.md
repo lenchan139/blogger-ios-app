@@ -8,7 +8,7 @@ A native iOS client for [Blogger](https://www.blogger.com) — write, edit and p
 - **Post editor** — WYSIWYG editing powered by **TipTap (ProseMirror)** inside a `WKWebView`, with:
   - Cursor-traced floating formatting toolbar (bold, italic, headings, lists, alignment, links, …)
   - HTML source view toggle and rendered preview
-  - Image insertion with an uploading placeholder + spinner (hosted via Google Photos)
+  - Image insertion with an uploading placeholder + spinner (hosted via Google Drive)
 - **Page editor** — same rich editing capabilities for static pages
 - **Post & page lists** — Published / Drafts / Local tabs, pull-to-refresh, infinite scroll (`pageToken` pagination)
 - **Local drafts** — unsaved edits auto-save locally and survive app relaunch
@@ -21,7 +21,7 @@ A native iOS client for [Blogger](https://www.blogger.com) — write, edit and p
 
 - iOS 17.0+
 - Xcode 16+
-- A Google Cloud project with the **Blogger API** and **Photos Library API** enabled
+- A Google Cloud project with the **Blogger API** and **Drive API** enabled
 
 ## Setup
 
@@ -36,10 +36,9 @@ A native iOS client for [Blogger](https://www.blogger.com) — write, edit and p
 Defined in `Configuration.scopes`:
 
 - `https://www.googleapis.com/auth/blogger`
-- `https://www.googleapis.com/auth/photoslibrary.appendonly`
-- `https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata`
+- `https://www.googleapis.com/auth/drive.file`
 
-> Note: since March 2025 the Photos Library API only exposes app-created media via `readonly.appcreateddata`. Also, Google Photos `baseUrl`s expire after 60 minutes — image URLs embedded via the upload flow are short-lived (see `GooglePhotosUploader` for details).
+> `drive.file` gives access only to files *created by this app* — used to host user-selected images with permanent URLs for embedding in posts. (The Photos Library API's `baseUrl`s expire after 60 minutes, so Google Drive is used as the image host instead.)
 
 ## Architecture
 
@@ -50,7 +49,7 @@ BloggerApp/
 ├── Networking/             # BloggerClient (Blogger API v3), errors
 ├── Models/                 # Post, Page, Comment, Blog, PageViews, …
 ├── Persistence/            # LocalDraftStore (JSON file-backed drafts)
-├── Images/                 # ImageUploading protocol + GooglePhotosUploader
+├── Images/                 # ImageUploading protocol + GoogleDriveUploader
 ├── Editor/                 # TipTap WKWebView bridge (RichEditorView)
 ├── Resources/Editor/       # editor.html + bundled tiptap.js
 └── Views/                  # SwiftUI screens
@@ -69,7 +68,7 @@ Rebuild the JS bundle with [esbuild](https://esbuild.github.io/) from the TipTap
 
 ## Not implemented / limitations
 
-- Image upload depends on Google Photos, whose base URLs expire (60 min) — not suited for permanent inline images in published posts.
+- Image upload hosts images on the user's Google Drive (`drive.file` scope) with a permanent `lh3.googleusercontent.com` URL. Requires the Drive API to be enabled in the Google Cloud project.
 - `xcodebuild test` on Xcode 16 has a known simulator test-host quirk; the `BloggerAppTests` target exists but may not run headlessly.
 
 ## License
