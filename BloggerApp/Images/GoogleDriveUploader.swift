@@ -21,12 +21,77 @@ import GoogleSignIn
 struct GoogleDriveUploader: ImageUploading {
     private static let baseURL = URL(string: "https://www.googleapis.com")!
     private static var transport: UploadTransport { .shared }
+    private static let folderName = "Blogger Media Uploads"
+
+    /// Cached folder ID so we only look it up once per app session.
+    private static var cachedFolderID: String?
 
     func upload(imageData: Data, contentType: String) async throws -> URL {
         let token = try await AuthManager.shared.currentAccessToken()
-        let fileID = try await uploadFile(data: imageData, contentType: contentType, token: token)
+        let folderID = try await resolveFolder(token: token)
+        let fileID = try await uploadFile(data: imageData, contentType: contentType, token: token, parentID: folderID)
         try await makePublic(fileID: fileID, token: token)
         return URL(string: "https://lh3.googleusercontent.com/d/\(fileID)=w1024-h1024")!
+    }
+}
+
+// MARK: - Step 0: resolve target folder
+
+private extension GoogleDriveUploader {
+    /// Returns the ID of the "Blogger Media Uploads" folder, creating it if
+    /// it doesn't exist yet. The result is cached for the app session.
+    func resolveFolder(token: String) async throws -> String {
+        if let cached = Self.cachedFolderID { return cached }
+
+        // Search for an existing folder by name.
+        let query = "mimeType='application/vnd.google-apps.folder' and name='\(Self.folderName)' and trashed=false"
+        var searchURL = Self.baseURL.appendingPathComponent("drive/v3/files")
+        searchURL = searchURL.appending(queryItems: [
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "fields", value: "files(id)"),
+            URLQueryItem(name: "pageSize", value: "1")
+        ])
+        var request = URLRequest(url: searchURL)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        struct FileList: Decodable {
+            struct File: Decodable { let id: String }
+            let files: [File]
+        }
+
+        let (searchBody, searchResp) = try await Self.transport.send(request)
+        guard let http = searchResp, (200..<300).contains(http.statusCode) else {
+            throw BloggerError.http(statusCode: searchResp?.statusCode ?? -1,
+                                    message: Self.errorText(searchBody))
+        }
+        let list = try JSONDecoder().decode(FileList.self, from: searchBody)
+        if let existing = list.files.first {
+            Self.cachedFolderID = existing.id
+            return existing.id
+        }
+
+        // Folder doesn't exist — create it.
+        var createRequest = URLRequest(url: Self.baseURL.appendingPathComponent("drive/v3/files"))
+        createRequest.httpMethod = "POST"
+        createRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        createRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let createBody: [String: Any] = [
+            "name": Self.folderName,
+            "mimeType": "application/vnd.google-apps.folder"
+        ]
+        createRequest.httpBody = try JSONSerialization.data(withJSONObject: createBody)
+
+        struct Created: Decodable { let id: String }
+
+        let (createdBody, createdResp) = try await Self.transport.send(createRequest)
+        guard let createdHTTP = createdResp, (200..<300).contains(createdHTTP.statusCode) else {
+            throw BloggerError.http(statusCode: createdResp?.statusCode ?? -1,
+                                    message: Self.errorText(createdBody))
+        }
+        let folder = try JSONDecoder().decode(Created.self, from: createdBody)
+        Self.cachedFolderID = folder.id
+        return folder.id
     }
 }
 
@@ -35,13 +100,13 @@ struct GoogleDriveUploader: ImageUploading {
 private extension GoogleDriveUploader {
     /// POSTs a multipart body (JSON metadata part + binary part) to
     /// `/upload/drive/v3/files?uploadType=multipart` and returns the file id.
-    func uploadFile(data: Data, contentType: String, token: String) async throws -> String {
+    func uploadFile(data: Data, contentType: String, token: String, parentID: String) async throws -> String {
         let boundary = "BloggerApp-\(UUID().uuidString)"
 
         var body = Data()
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/json; charset=UTF-8\r\n\r\n".data(using: .utf8)!)
-        let metadata = #"{"name":"image.jpg","mimeType":"\#(contentType)"}"#
+        let metadata = #"{"name":"image.jpg","mimeType":"\#(contentType)","parents":["\#(parentID)"]}"#
         body.append(metadata.data(using: .utf8)!)
         body.append("\r\n".data(using: .utf8)!)
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
