@@ -25,7 +25,7 @@
 			<string>Google OAuth Callback</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>$(GOOGLE_URL_SCHEME)</string>
+				<string>com.googleusercontent.apps.579169224720-9locuddld8dupm50oc197o0cg165tq90</string>
 			</array>
 		</dict>
 	</array>
